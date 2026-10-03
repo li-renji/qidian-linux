@@ -138,7 +138,7 @@ class PowerDialog(Gtk.Window):
 
     def _lock(self, *_):
         self.destroy()
-        subprocess.Popen(['python3', '/奇点OS/运行/ui_power.py', '--lock'])
+        subprocess.Popen(['python3', '/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_power.py', '--lock'])
 
     def _arm(self, action, name):
         self._pending = action
@@ -165,7 +165,7 @@ class PowerDialog(Gtk.Window):
         self._pending = None
         self.destroy()
         # 重新打开干净菜单
-        subprocess.Popen(['python3', '/奇点OS/运行/ui_power.py'])
+        subprocess.Popen(['python3', '/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_power.py'])
 
     def _exec_now(self, *_):
         if self._pending == 'poweroff':

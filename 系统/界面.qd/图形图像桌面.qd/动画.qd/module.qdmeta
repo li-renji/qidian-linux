@@ -1,0 +1,17 @@
+{
+  "name": "动画",
+  "id": "qd-ui-desktop-anim",
+  "version": "1.0.0",
+  "type": "ui",
+  "author": "奇点OS",
+  "description": "桌面动画引擎（GTK CSS 合成属性，软渲染红线）",
+  "entry": "anim.qds",
+  "permissions": [
+    "display"
+  ],
+  "services": [
+    "qd.ui.desktop.anim"
+  ],
+  "cause-id": "界面.qd.图形图像桌面.qd.动画.qd",
+  "parent_cause": "界面.qd.图形图像桌面.qd"
+}

@@ -12,7 +12,7 @@ import signal
 import subprocess
 
 BIN = os.path.dirname(os.path.abspath(__file__))
-PIDFILE = '/奇点OS/运行/.desktop.pids'
+PIDFILE = '/奇点OS/运行/.desktop.pids'  # 运行状态放 运行/（规范：运行/ 存运行时状态）
 
 # 常驻组件清单（按启动顺序；均收编于本模块 bin/）
 COMPONENTS = ['qwm.py', 'qd_desktop.py', 'ui_island.py', 'ui_dock.py']

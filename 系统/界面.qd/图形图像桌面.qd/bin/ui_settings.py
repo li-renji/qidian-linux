@@ -55,7 +55,7 @@ def _reload_icons():
 
 def _redecorate():
     """通知 qwm 重绘所有标题栏（不透明度实时生效）"""
-    _run(["/奇点OS/运行/qwmctl", "redecorate"])
+    _run(["/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/qwmctl", "redecorate"])
 
 
 def _toast(text):
@@ -594,7 +594,7 @@ class Settings(Gtk.Window):
                             "系统监视器",
                             _btn(
                                 "打开",
-                                lambda: _run(["python3", "/奇点OS/运行/ui_monitor.py"]),
+                                lambda: _run(["python3", "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_monitor.py"]),
                             ),
                         ),
                     ],
@@ -637,7 +637,7 @@ class Settings(Gtk.Window):
                             "回收站",
                             _btn(
                                 "打开",
-                                lambda: _run(["python3", "/奇点OS/运行/ui_trash.py"]),
+                                lambda: _run(["python3", "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_trash.py"]),
                             ),
                         ),
                     ],
@@ -647,11 +647,11 @@ class Settings(Gtk.Window):
 
     @staticmethod
     def _open_album():
-        _run(["python3", "/奇点OS/运行/ui_album.py", "--show"])
+        _run(["python3", "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_album.py", "--show"])
 
     @staticmethod
     def _open_store():
-        _run(["python3", "/奇点OS/运行/ui_installer.py"])
+        _run(["python3", "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_installer.py"])
 
     @staticmethod
     def _open_term():
@@ -659,7 +659,7 @@ class Settings(Gtk.Window):
 
     @staticmethod
     def _open_files():
-        _run(["python3", "/奇点OS/运行/ui_filebrowser.py"])
+        _run(["python3", "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_filebrowser.py"])
 
     @staticmethod
     def _restart_picom():
@@ -703,7 +703,7 @@ class Settings(Gtk.Window):
             [
                 "bash",
                 "-c",
-                "export DISPLAY=:0; setsid python3 /奇点OS/运行/%s "
+                "export DISPLAY=:0; setsid python3 /奇点OS/系统/界面.qd/图形图像桌面.qd/bin/%s "
                 ">/tmp/%s.log 2>&1 </dev/null &" % (script, name),
             ]
         )

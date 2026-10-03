@@ -7,8 +7,8 @@
 #   · 相册可快速定位到照片原位置
 #   · 系统级 AI 可经相册快速定位照片（→ 本地 JSON 查询接口）
 # 架构：常驻后台服务（索引 + socket），窗口按需创建
-#   · .xinitrc 常驻：python3 /奇点OS/运行/ui_album.py
-#   · 打开界面：    python3 /奇点OS/运行/ui_album.py --show（单例，已运行则请求开窗）
+#   · .xinitrc 常驻：python3 /奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_album.py
+#   · 打开界面：    python3 /奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_album.py --show（单例，已运行则请求开窗）
 #   · socket /tmp/qd_album.sock：show / search / stats / rescan / locate / open
 # 依赖的 UI token 全部来自 qd_ui_common（TreeSolo 原型）
 # ============================================================
@@ -84,7 +84,7 @@ SCAN_ROOTS = [
     os.path.expanduser("~/Downloads"),
     os.path.expanduser("~/下载"),
     "/奇点OS/用户.qd",
-    "/奇点OS/运行/ui_assets",
+    "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_assets",
 ]
 
 EXCLUDE = {
@@ -226,7 +226,7 @@ class Album(object):
             import subprocess
 
             subprocess.Popen(
-                ["python3", "/奇点OS/运行/ui_filebrowser.py", folder],
+                ["python3", "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_filebrowser.py", folder],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
@@ -490,7 +490,7 @@ class AlbumWindow(Gtk.Window):
             import subprocess
 
             subprocess.Popen(
-                ["python3", "/奇点OS/运行/ui_imageview.py", rec["path"]],
+                ["python3", "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_imageview.py", rec["path"]],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )

@@ -1,0 +1,225 @@
+{
+  "skillProvenance": {
+    "name": "solo-design",
+    "version": "2026.07.06.8",
+    "version_source": "skill-release-manifest.json",
+    "read_status": "ok"
+  },
+  "project": {
+    "projectName": "奇点 OS 深色桌面原型",
+    "projectDir": "ui_design_output",
+    "resolvedLane": "library_bound",
+    "selectedIntentWorkflow": "intent-workflows/intent-page-library-bound/INTENT_WORKFLOW.md",
+    "selectedIntentWorkflowRead": true,
+    "contextRequirementsLoaded": [
+      {
+        "path": "shared-runtime/runtime-boundaries/lane-runtime-contracts.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "shared-runtime/agent-dispatch-runtime/lane-dispatch-index.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "shared-runtime/agent-dispatch-runtime/shared-page-rendering-kernel.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "delivery-quality/page-rendering-quality-gate.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "delivery-quality/design-artifact-validation.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "delivery-quality/delivery-evidence-contract.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "visual-experience/visual-experience-guidelines.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      },
+      {
+        "path": "visual-experience/visual-checkpoint-protocol.md",
+        "readStatus": "loaded",
+        "bodyRead": true
+      }
+    ],
+    "operatingMode": "library-bound",
+    "deviceType": "desktop",
+    "viewportMode": "app-shell",
+    "dashboardMode": true,
+    "designSource": {
+      "libraryIdentity": {
+        "name": "苹果",
+        "id": "dl_builtin_apple",
+        "version": null,
+        "scope": "built-in-global",
+        "path": "c:/Users/人机/.trae-cn/design_libraries/dl_builtin_apple",
+        "versionSource": "selected-context"
+      },
+      "brandPrefix": "apple",
+      "cssPath": "c:/Users/人机/.trae-cn/design_libraries/dl_builtin_apple/colors_and_type.css",
+      "actualTokenNameReference": [
+        "--apple-background",
+        "--apple-foreground",
+        "--apple-card",
+        "--apple-card-foreground",
+        "--apple-popover",
+        "--apple-popover-foreground",
+        "--apple-primary",
+        "--apple-primary-foreground",
+        "--apple-secondary",
+        "--apple-secondary-foreground",
+        "--apple-muted",
+        "--apple-muted-foreground",
+        "--apple-accent",
+        "--apple-accent-foreground",
+        "--apple-destructive",
+        "--apple-destructive-foreground",
+        "--apple-border",
+        "--apple-input",
+        "--apple-ring",
+        "--background",
+        "--foreground",
+        "--card",
+        "--card-foreground",
+        "--popover",
+        "--popover-foreground",
+        "--primary",
+        "--primary-foreground",
+        "--secondary",
+        "--secondary-foreground",
+        "--muted",
+        "--muted-foreground",
+        "--accent",
+        "--accent-foreground",
+        "--destructive",
+        "--destructive-foreground",
+        "--border",
+        "--input",
+        "--ring",
+        "--icon",
+        "--icon-muted",
+        "--shadow-2xs",
+        "--shadow-xs",
+        "--shadow-sm",
+        "--shadow",
+        "--shadow-md",
+        "--shadow-lg",
+        "--shadow-xl",
+        "--shadow-2xl",
+        "--radius",
+        "--font-sans",
+        "--font-mono"
+      ],
+      "componentPlan": [
+        {
+          "slug": "button",
+          "contractKind": "legacy-json",
+          "previewFile": "c:/Users/人机/.trae-cn/design_libraries/dl_builtin_apple/preview/component-button.html",
+          "contractFile": "c:/Users/人机/.trae-cn/design_libraries/dl_builtin_apple/components/button.json"
+        },
+        {
+          "slug": "card",
+          "contractKind": "legacy-json",
+          "previewFile": "c:/Users/人机/.trae-cn/design_libraries/dl_builtin_apple/preview/component-card.html",
+          "contractFile": "c:/Users/人机/.trae-cn/design_libraries/dl_builtin_apple/components/card.json"
+        },
+        {
+          "slug": "navigation",
+          "contractKind": "legacy-json",
+          "previewFile": "c:/Users/人机/.trae-cn/design_libraries/dl_builtin_apple/preview/component-navigation.html",
+          "contractFile": "c:/Users/人机/.trae-cn/design_libraries/dl_builtin_apple/components/navigation.json"
+        }
+      ],
+      "tokenFidelity": "strict",
+      "iconAssets": {
+        "source": "assets/icons",
+        "projectIconDir": "assets/icons/dl_builtin_apple",
+        "libraryKey": "dl_builtin_apple",
+        "renderMethod": "css-mask",
+        "pathTemplate": "../assets/icons/dl_builtin_apple/{name}.svg",
+        "availableNames": [
+          "arrow-down", "arrow-left", "arrow-right", "arrow-up", "box", "check",
+          "chevron-down", "chevron-left", "chevron-right", "chevron-up",
+          "chevrons-down-up", "chevrons-up-down", "circle-alert", "circle-check",
+          "circle-minus", "circle-pause", "circle-play", "circle-plus",
+          "circle-question-mark", "external-link", "file", "folder-open",
+          "folder", "funnel", "grip", "heart", "house", "mail", "map-pin",
+          "message-circle-more", "mouse-pointer-click", "pen-line",
+          "send-horizontal", "star", "tag", "thumbs-down", "thumbs-up",
+          "trash-2", "triangle-alert", "user"
+        ],
+        "totalCount": 40,
+        "coloringRule": "currentColor by default; override with Library token when needed"
+      },
+      "designDecisionSummary": "基于苹果设计系统的克制、留白、圆角语言，为奇点 OS 构建深色桌面原型。使用 Library 深色语义 token（#000000 背景、#1c1c1e 卡片、#f5f5f7 文本、#2e8dff 强调色），保持轻量、稳定、动效克制的桌面体验。"
+    },
+    "pages": [
+      {
+        "nodeId": "page-index",
+        "htmlSrc": "pages/index.html",
+        "title": "奇点 OS 深色桌面",
+        "deviceType": "desktop",
+        "viewportMode": "app-shell",
+        "pageType": "task-driven",
+        "componentPlan": [
+          {
+            "slug": "button",
+            "contractKind": "legacy-json",
+            "previewFile": "c:/Users/人机/.trae-cn/design_libraries/dl_builtin_apple/preview/component-button.html",
+            "contractFile": "c:/Users/人机/.trae-cn/design_libraries/dl_builtin_apple/components/button.json"
+          },
+          {
+            "slug": "card",
+            "contractKind": "legacy-json",
+            "previewFile": "c:/Users/人机/.trae-cn/design_libraries/dl_builtin_apple/preview/component-card.html",
+            "contractFile": "c:/Users/人机/.trae-cn/design_libraries/dl_builtin_apple/components/card.json"
+          },
+          {
+            "slug": "navigation",
+            "contractKind": "legacy-json",
+            "previewFile": "c:/Users/人机/.trae-cn/design_libraries/dl_builtin_apple/preview/component-navigation.html",
+            "contractFile": "c:/Users/人机/.trae-cn/design_libraries/dl_builtin_apple/components/navigation.json"
+          }
+        ]
+      }
+    ],
+    "expectedDispatches": [
+      {
+        "nodeId": "page-index",
+        "packetType": "LibraryBoundPagePacket",
+        "status": "not_required",
+        "changedFiles": [],
+        "toolCallLedger": {
+          "todoWriteCalls": 0,
+          "previewCalls": 0,
+          "validationScriptCalls": 0,
+          "helperScriptWrites": 0
+        }
+      }
+    ],
+    "validationRunDiscipline": {
+      "maxFullValidationRuns": 2,
+      "softWarningsTriggerRepair": false,
+      "blockingRepairMode": "targeted-once",
+      "forbiddenRepairTriggers": [
+        "soft-warning-only",
+        "provenance-warning-only",
+        "style-warning-only"
+      ]
+    },
+    "lowValueCallWatchdog": {
+      "noProgressNextAction": "proceed_to_dispatch"
+    }
+  }
+}

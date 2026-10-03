@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""窗口.qd/win.qds —— X11 窗口操作封装
+提供：list / activate / minimize / close / watch（监听最小化事件）
+"""
+import subprocess, time, threading, os
+
+DISPLAY = ':0'
+
+def _run(args, timeout=5):
+    try:
+        env = dict(os.environ, DISPLAY=DISPLAY)
+        p = subprocess.run(args, capture_output=True, text=True, timeout=timeout, env=env)
+        return p.returncode, p.stdout.strip()
+    except Exception as e:
+        return -1, str(e)
+
+def list_windows():
+    """列出所有可见窗口 [{id, title}]"""
+    windows = []
+    rc, out = _run(['xdotool', 'search', '--onlyvisible', '--name', '.'])
+    if rc == 0 and out:
+        for wid in out.splitlines():
+            _, title = _run(['xdotool', 'getwindowname', wid])
+            if title and title not in ('xfce4-panel', 'xfdesktop', 'xfwm4'):
+                windows.append({'id': wid, 'title': title})
+    return windows
+
+def list_all_windows():
+    """列出所有窗口（含最小化/隐藏）[{id, title}]"""
+    windows = []
+    rc, out = _run(['xdotool', 'search', '--name', '.'])
+    if rc == 0 and out:
+        for wid in out.splitlines():
+            _, title = _run(['xdotool', 'getwindowname', wid])
+            if title:
+                windows.append({'id': wid, 'title': title})
+    return windows
+
+def activate(wid):
+    _run(['xdotool', 'windowactivate', str(wid)])
+    _run(['xdotool', 'windowmap', str(wid)])
+    _run(['xdotool', 'windowactivate', str(wid)])
+
+def minimize(wid):
+    _run(['xdotool', 'windowminimize', str(wid)])
+
+def close(wid):
+    _run(['xdotool', 'windowclose', str(wid)])
+
+def is_minimized(wid):
+    """检查窗口是否已最小化（用 xprop WM_STATE，xdotool getwindowstate 不可用）"""
+    rc, out = _run(['xprop', '-id', str(wid), 'WM_STATE'])
+    return 'Iconic' in out or 'iconic' in out
+
+def watch_minimize(on_minimized, interval=0.5):
+    """轮询监听窗口最小化事件。
+    on_minimized(wid, title) 回调。
+    修复：全量窗口列表 + xprop WM_STATE 检测状态变化。
+    """
+    state = {'known': {}}
+    def loop():
+        while True:
+            time.sleep(interval)
+            current = {}
+            for w in list_all_windows():
+                current[w['id']] = w['title']
+            for wid, title in current.items():
+                minimized = is_minimized(wid)
+                if wid in state['known']:
+                    was = state['known'][wid]
+                    if minimized and not was['min']:
+                        on_minimized(wid, title)
+                    state['known'][wid] = {'min': minimized}
+                else:
+                    state['known'][wid] = {'min': minimized}
+            state['known'] = {k: v for k, v in state['known'].items() if k in current}
+    t = threading.Thread(target=loop, daemon=True)
+    t.start()
+    return t
+
+if __name__ == '__main__':
+    import sys, json
+    if len(sys.argv) < 2:
+        print(json.dumps(list_windows(), ensure_ascii=False, indent=2))
+    elif sys.argv[1] == 'activate' and len(sys.argv) > 2:
+        activate(sys.argv[2])
+    elif sys.argv[1] == 'minimize' and len(sys.argv) > 2:
+        minimize(sys.argv[2])
+    elif sys.argv[1] == 'close' and len(sys.argv) > 2:
+        close(sys.argv[2])
+    else:
+        print('用法: win.qds [activate|minimize|close] <wid>')

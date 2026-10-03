@@ -128,7 +128,7 @@ class QDDesktop(Gtk.Window):
         if icon.path.endswith('.py'):
             subprocess.Popen(['python3', icon.path])
         else:
-            subprocess.Popen(['python3', '/奇点OS/运行/qd_fm.py', icon.path])
+            subprocess.Popen(['python3', '/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/qd_fm.py', icon.path])
 
 
 def main():

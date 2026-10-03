@@ -227,12 +227,12 @@ class Island(Gtk.Window):
         # 2) 快捷指令区（G.24：系统级功能直通）
         qrow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         for icon, name, cmd in (
-            ("globe", "浏览器", "python3 /奇点OS/运行/ui_browser.py"),
-            ("folder-open", "文件", "python3 /奇点OS/运行/ui_filebrowser.py"),
-            ("image", "相册", "python3 /奇点OS/运行/ui_album.py --show"),
-            ("trash-2", "回收站", "python3 /奇点OS/运行/ui_trash.py"),
-            ("settings", "设置", "python3 /奇点OS/运行/ui_settings.py"),
-            ("file-text", "编辑器", "python3 /奇点OS/运行/ui_editor.py"),
+            ("globe", "浏览器", "python3 /奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_browser.py"),
+            ("folder-open", "文件", "python3 /奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_filebrowser.py"),
+            ("image", "相册", "python3 /奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_album.py --show"),
+            ("trash-2", "回收站", "python3 /奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_trash.py"),
+            ("settings", "设置", "python3 /奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_settings.py"),
+            ("file-text", "编辑器", "python3 /奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_editor.py"),
         ):
             btn = self._qbtn(icon, name, cmd)
             qrow.pack_start(btn, False, False, 0)
@@ -573,7 +573,7 @@ class Island(Gtk.Window):
         if int(getattr(e, "type", 0)) == 5:
             try:
                 subprocess.run(
-                    ["/奇点OS/运行/qwmctl", "unhide", str(wid)],
+                    ["/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/qwmctl", "unhide", str(wid)],
                     timeout=3,
                     capture_output=True,
                 )

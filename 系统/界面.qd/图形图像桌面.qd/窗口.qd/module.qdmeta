@@ -1,0 +1,18 @@
+{
+  "name": "窗口",
+  "id": "qd-ui-desktop-window",
+  "version": "1.0.0",
+  "type": "ui",
+  "author": "奇点OS",
+  "description": "窗口操作封装（X11 / xdotool / xprop）",
+  "entry": "win.qds",
+  "permissions": [
+    "display",
+    "input"
+  ],
+  "services": [
+    "qd.ui.desktop.window"
+  ],
+  "cause-id": "界面.qd.图形图像桌面.qd.窗口.qd",
+  "parent_cause": "界面.qd.图形图像桌面.qd"
+}

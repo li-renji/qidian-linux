@@ -82,16 +82,16 @@ ACTIONS = {
             "92x24+620+90",
         ]
     ),
-    "editor": lambda: _launch(["python3", "/奇点OS/运行/ui_editor.py"]),
+    "editor": lambda: _launch(["python3", "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_editor.py"]),
     "newText": lambda: None,
     "newFolder": lambda: None,
-    "album": lambda: _launch(["python3", "/奇点OS/运行/ui_album.py", "--show"]),
+    "album": lambda: _launch(["python3", "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_album.py", "--show"]),
     "toggleIcons": lambda: C.send_icons({"cmd": "toggle"}),
-    "settings": lambda: _launch(["python3", "/奇点OS/运行/ui_settings.py"]),
-    "calc": lambda: _launch(["python3", "/奇点OS/运行/ui_calc.py"]),
-    "trash": lambda: _launch(["python3", "/奇点OS/运行/ui_trash.py"]),
-    "monitor": lambda: _launch(["python3", "/奇点OS/运行/ui_monitor.py"]),
-    "power": lambda: _launch(["python3", "/奇点OS/运行/ui_power.py"]),
+    "settings": lambda: _launch(["python3", "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_settings.py"]),
+    "calc": lambda: _launch(["python3", "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_calc.py"]),
+    "trash": lambda: _launch(["python3", "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_trash.py"]),
+    "monitor": lambda: _launch(["python3", "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_monitor.py"]),
+    "power": lambda: _launch(["python3", "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_power.py"]),
 }
 
 MENU_ITEMS = [
@@ -119,7 +119,7 @@ def _do_new_file(is_dir):
             C.send_icons({"cmd": "toast", "text": "创建失败"})
             return
         C.send_icons({"cmd": "toast", "text": "已创建文件夹：%s" % name})
-        _launch(["python3", "/奇点OS/运行/ui_filebrowser.py", DESKTOP_DIR])
+        _launch(["python3", "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_filebrowser.py", DESKTOP_DIR])
         return
     # 文本文件：创建后直接用内置文本编辑器打开（G.15 用户令）
     name = _unique("新建文本", ".txt")
@@ -130,7 +130,7 @@ def _do_new_file(is_dir):
         C.send_icons({"cmd": "toast", "text": "创建失败"})
         return
     C.send_icons({"cmd": "toast", "text": "已创建文本：%s" % name})
-    _launch(["python3", "/奇点OS/运行/ui_editor.py", p])
+    _launch(["python3", "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_editor.py", p])
 
 
 ACTIONS["newText"] = lambda: _do_new_file(False)

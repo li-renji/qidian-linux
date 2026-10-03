@@ -1,0 +1,17 @@
+{
+  "name": "工具",
+  "id": "qd-ui-desktop-tools",
+  "version": "1.0.0",
+  "type": "ui",
+  "author": "奇点OS",
+  "description": "桌面工具（终端/文件管理/编辑器）",
+  "status": "integrated",
+  "entry": "bin/",
+  "permissions": [
+    "exec",
+    "display"
+  ],
+  "services": [],
+  "cause-id": "界面.qd.图形图像桌面.qd.工具.qd",
+  "parent_cause": "界面.qd.图形图像桌面.qd"
+}

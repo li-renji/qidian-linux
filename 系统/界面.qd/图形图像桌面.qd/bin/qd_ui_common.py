@@ -38,11 +38,11 @@ DRAWER_BOTTOM = 96  # bottom-24
 DRAWER_W = 640  # w-[640px]
 TOAST_TOP = 56  # top-14
 
-UI_DIR = "/奇点OS/运行/ui_design"  # TreeSolo 原型资产（含 backdrop.png）
+UI_DIR = "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_design"  # TreeSolo 原型资产（含 backdrop.png）
 
 ICON_DIRS = [
-    "/奇点OS/运行/ui_design/assets/icons/lucide",
-    "/奇点OS/运行/ui_design/assets/icons/dl_builtin_apple",
+    "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_design/assets/icons/lucide",
+    "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_design/assets/icons/dl_builtin_apple",
 ]
 
 import socket, json, threading
@@ -82,25 +82,25 @@ BUILTIN_APPS = [
         "id": "browser",
         "icon": "globe",
         "name": "浏览器",
-        "cmd": "python3 /奇点OS/运行/ui_browser.py",
+        "cmd": "python3 /奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_browser.py",
     },
     {
         "id": "files",
         "icon": "folder-open",
         "name": "文件",
-        "cmd": "python3 /奇点OS/运行/ui_filebrowser.py",
+        "cmd": "python3 /奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_filebrowser.py",
     },
     {
         "id": "album",
         "icon": "image",
         "name": "相册",
-        "cmd": "python3 /奇点OS/运行/ui_album.py --show",
+        "cmd": "python3 /奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_album.py --show",
     },
     {
         "id": "trash",
         "icon": "trash-2",
         "name": "回收站",
-        "cmd": "python3 /奇点OS/运行/ui_trash.py",
+        "cmd": "python3 /奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_trash.py",
     },
     # G.24 用户令：系统级 AI 不再做桌面图标、也不进快捷窗，
     # 入口统一收进灵动岛（ui_island.py V5 AI 面板）。
@@ -112,7 +112,7 @@ DOCK_APPS = [
         "id": "store",
         "icon": "store",
         "name": "应用中心",
-        "cmd": "python3 /奇点OS/运行/ui_installer.py",
+        "cmd": "python3 /奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_installer.py",
     },
     {
         "id": "terminal",
@@ -124,7 +124,7 @@ DOCK_APPS = [
         "id": "settings",
         "icon": "settings",
         "name": "设置",
-        "cmd": "python3 /奇点OS/运行/ui_settings.py",
+        "cmd": "python3 /奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_settings.py",
     },
 ]
 
@@ -460,7 +460,7 @@ def run_picker(mode="open", root="/奇点OS", default="", filters=""):
     filters: 扩展名逗号分隔（例 'txt,md,py'），空串不过滤。"""
     import subprocess
 
-    cmd = ["python3", "/奇点OS/运行/ui_filepicker.py", "--mode", mode, "--root", root]
+    cmd = ["python3", "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_filepicker.py", "--mode", mode, "--root", root]
     if default:
         cmd += ["--default", default]
     if filters:

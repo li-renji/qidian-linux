@@ -83,13 +83,13 @@ def _open_file(path):
     ext = os.path.splitext(path)[1].lower()
     name = os.path.basename(path)
     if ext in IMG_EXT:
-        argv = ["python3", "/奇点OS/运行/ui_imageview.py", path]
+        argv = ["python3", "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_imageview.py", path]
     elif ext in QD_EXT or ext in ("", ".qds"):
-        argv = ["python3", "/奇点OS/运行/qd_viewer.py", path]
+        argv = ["python3", "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/qd_viewer.py", path]
     elif ext in TEXT_EXT or name in (".xinitrc", ".bash_profile", "PKGINFO"):
-        argv = ["python3", "/奇点OS/运行/ui_editor.py", path]
+        argv = ["python3", "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/ui_editor.py", path]
     else:
-        argv = ["python3", "/奇点OS/运行/qd_viewer.py", path]
+        argv = ["python3", "/奇点OS/系统/界面.qd/图形图像桌面.qd/bin/qd_viewer.py", path]
     subprocess.Popen(argv, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
