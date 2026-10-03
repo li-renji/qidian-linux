@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""奇点OS 顶部灵动岛（真实时钟/状态常驻组件，深色胶囊）"""
+import gi, time
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk, Gdk, GLib
+
+WEEK = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+
+CSS = b"""
+.island { background-color: rgba(24, 27, 40, 0.92); border: 1px solid rgba(80, 92, 130, 0.55);
+          border-radius: 22px; }
+.island:hover { border-color: rgba(120, 150, 210, 0.8); }
+.status-dot { background-color: #4cd964; border-radius: 5px; }
+.lbl { color: #e8eaf0; font-size: 13px; }
+.lbl-dim { color: #8b93ad; font-size: 13px; }
+.sep { color: #3a405c; font-size: 13px; }
+"""
+
+class Island(Gtk.Window):
+    def __init__(self, sw, sh):
+        Gtk.Window.__init__(self, type=Gtk.WindowType.POPUP)
+        self.set_decorated(False)
+        self.set_keep_above(True)
+        self.set_skip_taskbar_hint(True)
+        self.set_skip_pager_hint(True)
+        self.set_type_hint(Gdk.WindowTypeHint.DOCK)
+        self.set_app_paintable(True)
+        screen = self.get_screen()
+        visual = screen.get_rgba_visual()
+        if visual:
+            self.set_visual(visual)
+
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        box.get_style_context().add_class('island')
+        box.set_margin_left(18)
+        box.set_margin_right(18)
+        box.set_margin_top(6)
+        box.set_margin_bottom(6)
+        self.add(box)
+
+        # 左侧：AI 在线状态
+        dot = Gtk.DrawingArea()
+        dot.set_size_request(9, 9)
+        dot.get_style_context().add_class('status-dot')
+        box.pack_start(dot, False, False, 0)
+        lb1 = Gtk.Label(label='AI在线')
+        lb1.get_style_context().add_class('lbl')
+        box.pack_start(lb1, False, False, 0)
+
+        sep1 = Gtk.Label(label='·')
+        sep1.get_style_context().add_class('sep')
+        box.pack_start(sep1, False, False, 0)
+
+        lb2 = Gtk.Label(label='奇点OS')
+        lb2.get_style_context().add_class('lbl-dim')
+        box.pack_start(lb2, False, False, 0)
+
+        sep2 = Gtk.Label(label='·')
+        sep2.get_style_context().add_class('sep')
+        box.pack_start(sep2, False, False, 0)
+
+        self.lb_time = Gtk.Label(label='')
+        self.lb_time.get_style_context().add_class('lbl')
+        box.pack_start(self.lb_time, False, False, 0)
+
+        provider = Gtk.CssProvider()
+        provider.load_from_data(CSS)
+        Gtk.StyleContext.add_provider_for_screen(
+            screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+        self._update()
+        GLib.timeout_add(1000, self._update)
+
+        W = 440
+        H = 40
+        self.set_default_size(W, H)
+        self.move((sw - W) // 2, 8)
+        self.show_all()
+
+    def _update(self):
+        t = time.localtime()
+        self.lb_time.set_text('%02d/%02d %s %02d:%02d:%02d' % (
+            t.tm_mon, t.tm_mday, WEEK[t.tm_wday], t.tm_hour, t.tm_min, t.tm_sec))
+        return True
+
+
+if __name__ == '__main__':
+    screen = Gdk.Screen.get_default()
+    sw, sh = screen.get_width(), screen.get_height()
+    win = Island(sw, sh)
+    win.connect('destroy', Gtk.main_quit)
+    Gtk.main()

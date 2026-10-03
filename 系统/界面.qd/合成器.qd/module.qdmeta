@@ -1,0 +1,17 @@
+{
+  "name": "合成器",
+  "id": "qd-compositor",
+  "version": "1.0.0",
+  "type": "ui",
+  "author": "奇点OS",
+  "description": "合成器：wlroots封装，画面合成",
+  "entry": "bin/module_main",
+  "permissions": [
+    "display"
+  ],
+  "services": [
+    "qd.compositor"
+  ],
+  "cause-id": "界面.qd.合成器.qd",
+  "parent_cause": "界面.qd"
+}

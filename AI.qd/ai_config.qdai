@@ -1,0 +1,67 @@
+---
+name: ai_config 规则
+target: auto
+priority: 50
+trigger: auto
+author: 奇点OS
+version: 1.1.0
+cause-id: AI.qd
+parent_cause: root
+
+---
+===QD_SECTION_NATURAL_LANGUAGE===
+ai_config 模块是 AI.qd 的配置规则：定义系统级 AI 的配置边界、令牌管理、模型切换与日志级别。
+所有配置读写必须经过用户授权；配置不回显明文密钥。
+
+核心原则：
+1. 配置分三类：系统配置（系统.qd 读写）、用户配置（用户.qd 读写）、AI 运行时配置（仅内存态）。
+2. 令牌管理：眼睛/笔/橡皮 由用户放权；令牌存储于 AI 配置区，不回显。
+3. 模型切换：本地（MNN/llama.cpp 引擎）与云端 API；未就绪如实报告并给出配置入口。
+4. 日志：系统日志与 ai.qd 日志分离；错误码 012345 分级。
+5. 系统知识入口：被问及系统架构/实现/模块位置时，先读 /奇点OS/文档/AI_系统速览.md 定位章节，再读 /奇点OS/文档/奇点OS_Linux版系统规范_v1.0.md 原文作答，不得凭速览/记忆臆造；云端接入见规范 5.8。
+===QD_SECTION_STRUCTURED_RULES===
+{
+  "schema_version": 1,
+  "rules": [
+    {
+      "id": "rule_ai_config_001",
+      "condition": "config_read",
+      "action": {"type": "eye_authorized", "note": "读配置需眼睛令牌"},
+      "priority": 50
+    },
+    {
+      "id": "rule_ai_config_002",
+      "condition": "config_write",
+      "action": {"type": "pen_authorized", "note": "写配置需笔令牌"},
+      "priority": 50
+    },
+    {
+      "id": "rule_ai_config_003",
+      "condition": "model_switch",
+      "action": {"type": "route", "target": "推理引擎.qd"},
+      "priority": 40
+    },
+    {
+      "id": "rule_ai_config_004",
+      "condition": "api_key",
+      "action": {"type": "mask", "note": "密钥只存不回显"},
+      "priority": 70
+    }
+  ]
+}
+===QD_SECTION_CONTRACT===
+[架构规则]（AI 生成或修改配置相关代码的前置约束）
+1. 配置分区：系统配置、用户配置、AI 运行时配置三区隔离；禁止混写。
+2. 令牌安全：眼/笔/橡皮令牌只比对不回显；日志、界面、对话中禁止打印明文令牌。
+3. 模型切换契约：接口 ready->bool、model->str、engine->str(MNN/llama.cpp)、switch(provider)。
+4. 云端 API：只向用户索取 API key；key 存配置区，请求时读取，响应后不落日志。
+5. 诚实契约：未安装/未配置的状态如实上报（code=1/4），绝不假装可用。
+6. 错误码分级（规范 9.6）：0=成功 1=参数/契约 2=依赖缺失 3=权限拒绝 4=资源不足 5=内部错误。
+7. 日志格式：[级别][时间][模块id][错误码] 消息；级别 D/I/W/E/F。
+
+[接口契约模板]
+GET  /ai/config/state      -> {"code":0,"data":{"ready":bool,"model":str,"engine":str}}
+POST /ai/config/token      -> {"token":"..."}（仅比对）
+POST /ai/config/model      -> {"provider":"local|cloud","api_key":"sk-..."}
+===QD_SECTION_KNOWLEDGE===
+ai_config 与 ai_entry、intent_agent、推理引擎、记忆库协同；配置变更后由 ai.qd 统一生效，模块无需重启。

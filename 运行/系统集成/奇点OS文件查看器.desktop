@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=奇点OS文件查看器
+Comment=查看 .qds/.qdai/.qdmeta 内容
+Exec=python3 /奇点OS/运行/qd_viewer.py %f
+Icon=text-x-generic
+Terminal=false
+MimeType=application/x-qds;application/x-qdai;application/x-qdmeta;
+Categories=System;
+NoDisplay=true

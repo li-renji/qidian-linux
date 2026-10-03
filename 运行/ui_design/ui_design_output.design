@@ -1,0 +1,760 @@
+{
+  "data": [
+    {
+      "id": "page-index",
+      "title": "奇点 OS 深色桌面",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-c1f2caa3",
+          "measuredAt": 1790310758609
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/index.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "image-001",
+      "title": "向下箭头",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 0,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/arrow-down.svg"
+      }
+    },
+    {
+      "id": "image-002",
+      "title": "向左箭头",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 480,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/arrow-left.svg"
+      }
+    },
+    {
+      "id": "image-003",
+      "title": "向右箭头",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 960,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/arrow-right.svg"
+      }
+    },
+    {
+      "id": "image-004",
+      "title": "向上箭头",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 1440,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/arrow-up.svg"
+      }
+    },
+    {
+      "id": "image-005",
+      "title": "盒子",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 1920,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/box.svg"
+      }
+    },
+    {
+      "id": "image-006",
+      "title": "勾选",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 2400,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/check.svg"
+      }
+    },
+    {
+      "id": "image-007",
+      "title": "下折号",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 2880,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/chevron-down.svg"
+      }
+    },
+    {
+      "id": "image-008",
+      "title": "左折号",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 3360,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/chevron-left.svg"
+      }
+    },
+    {
+      "id": "image-009",
+      "title": "右折号",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 3840,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/chevron-right.svg"
+      }
+    },
+    {
+      "id": "image-010",
+      "title": "上折号",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 4320,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/chevron-up.svg"
+      }
+    },
+    {
+      "id": "image-011",
+      "title": "上下折叠",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 4800,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/chevrons-down-up.svg"
+      }
+    },
+    {
+      "id": "image-012",
+      "title": "上下展开",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 5280,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/chevrons-up-down.svg"
+      }
+    },
+    {
+      "id": "image-013",
+      "title": "警告",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 5760,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/circle-alert.svg"
+      }
+    },
+    {
+      "id": "image-014",
+      "title": "确认",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 6240,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/circle-check.svg"
+      }
+    },
+    {
+      "id": "image-015",
+      "title": "减号",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 6720,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/circle-minus.svg"
+      }
+    },
+    {
+      "id": "image-016",
+      "title": "暂停",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 7200,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/circle-pause.svg"
+      }
+    },
+    {
+      "id": "image-017",
+      "title": "播放",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 7680,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/circle-play.svg"
+      }
+    },
+    {
+      "id": "image-018",
+      "title": "添加",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 8160,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/circle-plus.svg"
+      }
+    },
+    {
+      "id": "image-019",
+      "title": "帮助",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 8640,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/circle-question-mark.svg"
+      }
+    },
+    {
+      "id": "image-020",
+      "title": "外部链接",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 9120,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/external-link.svg"
+      }
+    },
+    {
+      "id": "image-021",
+      "title": "文件",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 9600,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/file.svg"
+      }
+    },
+    {
+      "id": "image-022",
+      "title": "打开文件夹",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 10080,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/folder-open.svg"
+      }
+    },
+    {
+      "id": "image-023",
+      "title": "文件夹",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 10560,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/folder.svg"
+      }
+    },
+    {
+      "id": "image-024",
+      "title": "筛选",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 11040,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/funnel.svg"
+      }
+    },
+    {
+      "id": "image-025",
+      "title": "抓手",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 11520,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/grip.svg"
+      }
+    },
+    {
+      "id": "image-026",
+      "title": "收藏",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 12000,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/heart.svg"
+      }
+    },
+    {
+      "id": "image-027",
+      "title": "主页",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 12480,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/house.svg"
+      }
+    },
+    {
+      "id": "image-028",
+      "title": "邮件",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 12960,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/mail.svg"
+      }
+    },
+    {
+      "id": "image-029",
+      "title": "定位",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 13440,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/map-pin.svg"
+      }
+    },
+    {
+      "id": "image-030",
+      "title": "消息",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 13920,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/message-circle-more.svg"
+      }
+    },
+    {
+      "id": "image-031",
+      "title": "鼠标点击",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 14400,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/mouse-pointer-click.svg"
+      }
+    },
+    {
+      "id": "image-032",
+      "title": "编辑",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 14880,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/pen-line.svg"
+      }
+    },
+    {
+      "id": "image-033",
+      "title": "发送",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 15360,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/send-horizontal.svg"
+      }
+    },
+    {
+      "id": "image-034",
+      "title": "星标",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 15840,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/star.svg"
+      }
+    },
+    {
+      "id": "image-035",
+      "title": "标签",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 16320,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/tag.svg"
+      }
+    },
+    {
+      "id": "image-036",
+      "title": "反对",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 16800,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/thumbs-down.svg"
+      }
+    },
+    {
+      "id": "image-037",
+      "title": "赞同",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 17280,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/thumbs-up.svg"
+      }
+    },
+    {
+      "id": "image-038",
+      "title": "删除",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 17760,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/trash-2.svg"
+      }
+    },
+    {
+      "id": "image-039",
+      "title": "三角警告",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 18240,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/triangle-alert.svg"
+      }
+    },
+    {
+      "id": "image-040",
+      "title": "用户",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1790309830000,
+      "canvasData": {
+        "x": 18720,
+        "y": 373,
+        "naturalSize": {
+          "width": 24,
+          "height": 24
+        }
+      },
+      "devMetadata": {
+        "imageSrc": "assets/icons/dl_builtin_apple/user.svg"
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "desktop",
+    "projectName": "奇点 OS 深色桌面原型",
+    "designLibrary": {
+      "name": "苹果",
+      "id": "dl_builtin_apple",
+      "version": null,
+      "scope": "built-in-global",
+      "path": "c:/Users/人机/.trae-cn/design_libraries/dl_builtin_apple",
+      "versionSource": "selected-context"
+    }
+  }
+}

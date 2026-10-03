@@ -1,0 +1,18 @@
+{
+  "name": "界面",
+  "id": "qd-ui",
+  "version": "1.0.0",
+  "type": "ui",
+  "author": "奇点OS",
+  "description": "图形界面模块：窗口管理、渲染管线",
+  "entry": "bin/module_main",
+  "permissions": [
+    "display",
+    "input"
+  ],
+  "services": [
+    "qd.ui"
+  ],
+  "cause-id": "界面.qd",
+  "parent_cause": "root"
+}

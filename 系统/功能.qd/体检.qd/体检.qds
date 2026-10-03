@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+体检.qds —— 奇点OS 底层健康检查（防再犯机制）
+作用：每次修改前 / 每天定时 / 随时手动，检查底层是否打牢。
+检查项：
+  C1 每个 .qd 模块有独立 git 仓库且有提交
+  C2 每个 .qd 模块有 module.qdmeta 且为合法 JSON
+  C3 无空占位 .qds（<200 字节）
+  C4 核心服务文件存在
+  C5 systemd 4 服务全部 active
+  C6 根 git 与所有模块 git 无未提交改动
+  C7 库.qd 二进制未被 git 跟踪（lib/ 应被忽略）
+  C8 QDSS 容器可直接执行（binfmt_misc + qd-run 接入）
+  C9 每个 .qd 模块自带模块自检.qds 且自检通过
+退出码：0=全部通过，1=有警告，2=有失败项
+"""
+import json, os, re, subprocess, sys, datetime
+
+ROOT = '/奇点OS'
+LOG = '/奇点OS/运行/logs/health_report.log'
+CORE_FILES = [
+    '/奇点OS/系统/功能.qd/shm_ipc.qds',
+    '/奇点OS/系统/功能.qd/进程调度.qds',
+    '/奇点OS/系统/微服务.qd/microsrv.qds',
+    '/奇点OS/AI.qd/ai_daemon.qds',
+    '/奇点OS/AI.qd/ai_service.qds',
+    '/奇点OS/运行/qd_loader.py',
+    '/奇点OS/运行/qd-init.py',
+    '/奇点OS/运行/qd-run.py',
+]
+SYSTEMD_SERVICES = ['qd-os', 'ai-qd', 'qd-hotload', 'qd-power']
+
+results = []  # (id, level, msg)  level: PASS/WARN/FAIL
+
+def run(cmd):
+    try:
+        r = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
+        return r.stdout.strip(), r.returncode
+    except Exception as ex:
+        return str(ex), -1
+
+def check(cid, cond, ok_msg, bad_msg):
+    results.append((cid, 'PASS' if cond else 'FAIL', ok_msg if cond else bad_msg))
+
+def find_qd_dirs():
+    dirs = []
+    for root, dnames, _ in os.walk(ROOT):
+        for d in dnames:
+            if d.endswith('.qd'):
+                dirs.append(os.path.join(root, d))
+    return sorted(dirs)
+
+# ---------- C1 C2: 模块 git + qdmeta ----------
+qd_dirs = find_qd_dirs()
+no_git, no_qdmeta, bad_qdmeta = [], [], []
+for d in qd_dirs:
+    if not os.path.isdir(os.path.join(d, '.git')):
+        no_git.append(d)
+        continue
+    out, _ = run(f'cd "{d}" && git log --oneline 2>/dev/null | wc -l')
+    if out.strip() == '0':
+        no_git.append(d + ' (无提交)')
+    if not os.path.isfile(os.path.join(d, 'module.qdmeta')):
+        no_qdmeta.append(d)
+    else:
+        try:
+            with open(os.path.join(d, 'module.qdmeta'), encoding='utf-8') as f:
+                json.load(f)
+        except Exception:
+            bad_qdmeta.append(d)
+
+check('C1', not no_git,
+      f'所有 .qd 模块有 git 仓库且有提交（{len(qd_dirs)} 个）',
+      f'缺少 git 仓库/提交: {no_git}')
+check('C2', not no_qdmeta and not bad_qdmeta,
+      f'所有 .qd 模块有合法 JSON module.qdmeta（{len(qd_dirs)} 个）',
+      f'缺 qdmeta: {no_qdmeta}; 非法 JSON: {bad_qdmeta}')
+
+# ---------- C3: 空占位 .qds ----------
+small = []
+for root, _, files in os.walk(ROOT):
+    if '/.git/' in root or '/.git\\' in root:
+        continue
+    for f in files:
+        if f.endswith('.qds'):
+            p = os.path.join(root, f)
+            try:
+                if os.path.getsize(p) < 200:
+                    small.append(p.replace(ROOT, '', 1))
+            except OSError:
+                pass
+check('C3', not small, '无空占位 .qds', f'疑似空占位 .qds: {small}')
+
+# ---------- C4: 核心服务文件 ----------
+missing = [p for p in CORE_FILES if not os.path.isfile(p)]
+check('C4', not missing, '核心服务文件全部存在', f'缺失: {missing}')
+
+# ---------- C5: systemd 服务 ----------
+inactive = []
+for s in SYSTEMD_SERVICES:
+    out, _ = run(f'systemctl is-active {s} 2>/dev/null')
+    if out.strip() != 'active':
+        inactive.append(s)
+check('C5', not inactive, 'systemd 4 服务全部 active', f'未 active: {inactive}')
+
+# ---------- C6: git 未提交改动 ----------
+dirty = []
+out, _ = run(f'cd {ROOT} && git status --porcelain 2>/dev/null')
+if out.strip():
+    dirty.append('根仓库')
+out, _ = run(f'find {ROOT} -name .git -type d | grep -v "^{ROOT}/.git$" | sed "s#/\\.git$##"')
+for d in [x for x in out.splitlines() if x.strip()]:
+    o2, _ = run(f'cd "{d}" && git status --porcelain 2>/dev/null')
+    if o2.strip():
+        dirty.append(d.replace(ROOT, '', 1))
+check('C6', not dirty, '根 git 与所有模块 git 工作树干净', f'有未提交改动: {dirty[:10]}')
+
+# ---------- C7: 库.qd 二进制不入库 ----------
+so_tracked, _ = run('cd /奇点OS && git ls-files | grep -c "\\.so$" 2>/dev/null')
+check('C7', so_tracked.strip() == '0', '库.qd 二进制未进入 git 跟踪', f'根 git 仍跟踪 {so_tracked.strip()} 个 .so')
+
+# ---------- C8: QDSS 容器可直接执行 ----------
+qdss_ok = True
+qdss_bad = []
+for probe in ['/奇点OS/系统/功能.qd/shm_ipc.qds', '/奇点OS/系统/微服务.qd/microsrv.qds']:
+    if not os.path.isfile(probe):
+        continue
+    out, rc = run(f'/usr/bin/timeout 15 {probe} status 2>&1 | head -2')
+    if '"code"' not in out:
+        qdss_ok = False
+        qdss_bad.append(probe)
+check('C8', qdss_ok, 'QDSS 容器可直接执行（binfmt_misc + qd-run）', f'容器执行失败: {qdss_bad}')
+
+# ---------- C9: 每模块自检 ----------
+bad_self = []
+for d in find_qd_dirs():
+    sc = os.path.join(d, '模块自检.qds')
+    if not os.path.isfile(sc):
+        bad_self.append(f'{d.replace(ROOT, "", 1)} 缺模块自检.qds')
+        continue
+    out, rc = run(f'cd "{d}" && {sc} --json 2>/dev/null')
+    try:
+        j = json.loads(out)
+        fails = [r['id'] for r in j.get('results', []) if r['level'] == 'FAIL']
+        if fails:
+            bad_self.append(f'{d.replace(ROOT, "", 1)}({",".join(fails)})')
+    except Exception:
+        bad_self.append(f'{d.replace(ROOT, "", 1)} 自检执行异常')
+check('C9', not bad_self, f'全部 {len(find_qd_dirs())} 个模块自检通过', f'模块自检失败: {bad_self[:10]}')
+
+# ---------- 输出 ----------
+fails = [r for r in results if r[1] == 'FAIL']
+warns = [r for r in results if r[1] == 'WARN']
+ts = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+lines = [f'===== 奇点OS 底层健康检查 {ts} =====']
+for cid, level, msg in results:
+    lines.append(f'[{level}] {cid} {msg}')
+verdict = '✅ 全部通过' if not fails else f'❌ {len(fails)} 项失败'
+lines.append(f'结论: {verdict}')
+report = '\n'.join(lines)
+
+print(report)
+os.makedirs(os.path.dirname(LOG), exist_ok=True)
+with open(LOG, 'a', encoding='utf-8') as f:
+    f.write(report + '\n')
+
+sys.exit(2 if fails else (1 if warns else 0))

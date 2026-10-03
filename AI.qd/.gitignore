@@ -1,0 +1,7 @@
+intent_agent.qd/
+推理引擎.qd/
+__pycache__/
+记忆库/
+__pycache__/
+
+日志/

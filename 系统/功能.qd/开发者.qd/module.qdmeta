@@ -1,0 +1,18 @@
+{
+  "name": "开发者",
+  "id": "qd-dev",
+  "version": "1.0.0",
+  "type": "dev",
+  "author": "奇点OS",
+  "description": "内置开发环境：编译工具链/调试器/QD模拟器/SDK",
+  "entry": "bin/module_main",
+  "permissions": [
+    "exec",
+    "net"
+  ],
+  "services": [
+    "qd.dev"
+  ],
+  "cause-id": "功能.qd.开发者.qd",
+  "parent_cause": "功能.qd"
+}

@@ -1,0 +1,35 @@
+
+# === 底层加固：模块独立成仓后，根仓库不再跟踪（由各模块 .qd git 管理）===
+/系统/功能.qd/基础命令.qd/
+/系统/界面.qd/图形图像桌面.qd/
+/系统/界面.qd/XFCE桌面.qd/
+/系统/库.qd/
+/用户.qd/
+/运行/logs/
+__pycache__/
+
+# === 发布补充：模型与运行数据不发布 ===
+/AI.qd/模型库/MiniCPM-2B/
+/AI.qd/模型库/SmolVLM2-500M/
+/AI.qd/模型库/Laya/
+/AI.qd/模型库/TTS/
+/AI.qd/模型库/ASR/
+/AI.qd/模型库/VAD/
+/AI.qd/模型库/*.jpg
+/运行/logs/
+/运行/events/
+*.log
+*.bak-*
+
+# === 发布补充：模型与运行数据不发布 ===
+/AI.qd/模型库/MiniCPM-2B/
+/AI.qd/模型库/SmolVLM2-500M/
+/AI.qd/模型库/Laya/
+/AI.qd/模型库/TTS/
+/AI.qd/模型库/ASR/
+/AI.qd/模型库/VAD/
+/AI.qd/模型库/*.jpg
+/运行/logs/
+/运行/events/
+*.log
+*.bak-*

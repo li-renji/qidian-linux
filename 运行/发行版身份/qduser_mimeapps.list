@@ -1,0 +1,7 @@
+[Default Applications]
+application/octet-stream=奇点OS文件浏览器.desktop
+inode/directory=奇点OS文件浏览器.desktop
+
+[Added Associations]
+application/octet-stream=奇点OS文件浏览器.desktop;
+inode/directory=奇点OS文件浏览器.desktop;

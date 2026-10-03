@@ -1,0 +1,18 @@
+{
+  "name": "体检",
+  "id": "qd-func-health",
+  "version": "1.0.0",
+  "type": "system",
+  "author": "奇点OS",
+  "description": "底层健康检查（防再犯机制）：git基线/qdmeta/占位/核心服务/systemd/工作树/二进制入库",
+  "entry": "体检.qds",
+  "permissions": [
+    "exec",
+    "fs"
+  ],
+  "services": [
+    "qd.func.health"
+  ],
+  "cause-id": "功能.qd.体检.qd",
+  "parent_cause": "功能.qd"
+}

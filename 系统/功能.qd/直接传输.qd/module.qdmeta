@@ -1,0 +1,18 @@
+{
+  "name": "直接传输",
+  "id": "qd-direct",
+  "version": "1.0.0",
+  "type": "core",
+  "author": "奇点OS",
+  "description": "AI.qd直接传输模块：应用间数据直连，不经AI实时转发",
+  "entry": "bin/module_main",
+  "permissions": [
+    "ipc",
+    "net"
+  ],
+  "services": [
+    "qd.direct"
+  ],
+  "cause-id": "功能.qd.直接传输.qd",
+  "parent_cause": "功能.qd"
+}

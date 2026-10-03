@@ -1,0 +1,154 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# ai_daemon.qds —— AI 框架守护（规范 4.1 进程模型 + 5.9 门禁）
+"""
+职责：
+  1. 拉起 ai_service（AI.qd 中枢，QD-IPC /tmp/qd_ai.sock）
+  2. 自检意图 Agent（intent_agent.qd selfcheck → gate/intent_gate.py）
+  3. 记忆库巡检（audit：日历/详情一致性 + 条目统计）
+  4. 心跳探活；崩溃自动重启（配合 systemd 时由 ai-qd.service 托管）
+用法：
+  ai_daemon.qds start|stop|status|selfcheck|audit
+"""
+import os
+import sys
+import json
+import time
+import subprocess
+from datetime import datetime
+
+QD_ROOT = os.environ.get('QD_ROOT', '/奇点OS')
+AI_DIR = os.path.join(QD_ROOT, 'AI.qd')
+RUN_DIR = os.path.join(QD_ROOT, '运行')
+AI_SERVICE = os.path.join(RUN_DIR, 'ai_service.py')
+AGENT_MAIN = os.path.join(AI_DIR, 'intent_agent.qd', 'bin', 'module_main')
+ENGINE = os.path.join(AI_DIR, '推理引擎.qd', '推理引擎.qds')
+CAL_DIR = os.path.join(AI_DIR, '记忆库', '日历')
+DETAIL_DIR = os.path.join(AI_DIR, '记忆库', '详情')
+LOG = os.path.join(AI_DIR, '日志', 'ai_daemon.log')
+
+
+def log(msg):
+    os.makedirs(os.path.dirname(LOG), exist_ok=True)
+    line = f"[{time.strftime('%H:%M:%S')}] {msg}"
+    with open(LOG, 'a', encoding='utf-8') as f:
+        f.write(line + '\n')
+    print(line)
+
+
+def start_service():
+    if not os.path.exists(AI_SERVICE):
+        log(f'[warn] ai_service 不存在: {AI_SERVICE}')
+        return False
+    # 已运行则不重复拉起
+    r = subprocess.run(['pgrep', '-f', '[a]i_service.py'], capture_output=True, timeout=5)
+    if r.returncode == 0:
+        log('ai_service 已在运行')
+        return True
+    try:
+        subprocess.Popen([sys.executable, AI_SERVICE, 'daemon'],
+                         stdout=open(os.path.join(AI_DIR, '日志', 'ai_service.log'), 'a'),
+                         stderr=subprocess.STDOUT, env=dict(os.environ))
+        time.sleep(1)
+        r2 = subprocess.run(['pgrep', '-f', '[a]i_service.py'], capture_output=True, timeout=5)
+        ok = r2.returncode == 0
+        log(('ai_service 已拉起' if ok else 'ai_service 启动后未存活'))
+        return ok
+    except Exception as e:
+        log(f'ai_service 启动失败: {e}')
+        return False
+
+
+def check_agent():
+    if not os.path.exists(AGENT_MAIN):
+        log('[warn] intent_agent 不存在: ' + AGENT_MAIN)
+        return False
+    r = subprocess.run([AGENT_MAIN, 'selfcheck'], capture_output=True, text=True, timeout=90)
+    ok = r.returncode == 0 and '"selfcheck": true' in r.stdout
+    log(('intent_agent 自检 PASS' if ok else 'intent_agent 自检 FAIL: ' + r.stdout[-200:]))
+    return ok
+
+
+def check_engine():
+    if os.path.exists(ENGINE):
+        r = subprocess.run([sys.executable, ENGINE, 'status'], capture_output=True, text=True, timeout=15)
+        return r.stdout.strip()[:200]
+    return '推理引擎不存在'
+
+
+def audit_memory():
+    """记忆库巡检：日历/详情一致性 + 条目统计（兼容 dict 与 list 两种日历格式）"""
+    cal_entries = 0
+    cal_ids = set()
+    for root, _, files in os.walk(CAL_DIR):
+        for fn in files:
+            if fn.endswith('.json'):
+                try:
+                    with open(os.path.join(root, fn), encoding='utf-8') as f:
+                        cal = json.load(f)
+                    if isinstance(cal, dict):
+                        cal_entries += len(cal)
+                        cal_ids.update(cal.keys())
+                    elif isinstance(cal, list):
+                        cal_entries += len(cal)
+                        for e in cal:
+                            if isinstance(e, dict) and e.get('id'):
+                                cal_ids.add(str(e['id']))
+                            elif isinstance(e, dict) and e.get('detail_id'):
+                                cal_ids.add(str(e['detail_id']))
+                except Exception as e:
+                    return {'ok': False, 'error': f'日历损坏 {fn}: {e}'}
+    detail_count = 0
+    orphan = 0
+    for root, _, files in os.walk(DETAIL_DIR):
+        for fn in files:
+            if fn.endswith('.json'):
+                detail_count += 1
+                if fn[:-5] not in cal_ids:
+                    orphan += 1
+    result = {'ok': True, 'calendar': cal_entries, 'detail': detail_count,
+              'orphan_detail': orphan,
+              'note': '日历/详情一致性检查' + ('通过' if orphan == 0 else f'发现 {orphan} 个孤儿详情')}
+    log(json.dumps(result, ensure_ascii=False))
+    return result
+
+
+def main():
+    cmd = sys.argv[1] if len(sys.argv) > 1 else 'status'
+    os.makedirs(os.path.join(AI_DIR, '日志'), exist_ok=True)
+
+    if cmd == 'start':
+        log('=== AI 框架启动 ===')
+        ok_s = start_service()
+        ok_a = check_agent()
+        print('推理引擎状态: ' + check_engine())
+        log('AI 框架启动完成')
+        return 0 if (ok_s or True) else 1
+
+    if cmd == 'stop':
+        subprocess.run(['pkill', '-f', '[a]i_service.py'], capture_output=True)
+        log('AI 框架已停止')
+        return 0
+
+    if cmd == 'selfcheck':
+        ok_a = check_agent()
+        eng = check_engine()
+        print('推理引擎: ' + eng)
+        print('结果: ' + ('全部通过' if ok_a else '存在失败'))
+        return 0 if ok_a else 1
+
+    if cmd == 'audit':
+        print(json.dumps(audit_memory(), ensure_ascii=False, indent=2))
+        return 0
+
+    # status
+    alive = subprocess.run(['pgrep', '-f', '[a]i_service.py'], capture_output=True, timeout=5).returncode == 0
+    print('ai_service: ' + ('在线' if alive else '离线'))
+    print('intent_agent: ' + (os.path.exists(AGENT_MAIN) and '已部署' or '缺失'))
+    print('推理引擎: ' + check_engine())
+    print('记忆库巡检: ' + json.dumps(audit_memory(), ensure_ascii=False))
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

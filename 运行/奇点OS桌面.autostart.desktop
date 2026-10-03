@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=奇点OS桌面
+Comment=奇点OS自研桌面外壳（图标层）
+Exec=python3 /奇点OS/运行/qd_desktop.py
+X-GNOME-Autostart-enabled=true
+NoDisplay=true
+Hidden=false
