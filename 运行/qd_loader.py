@@ -20,7 +20,7 @@ import re
 
 QDS_MAGIC = 0x51445353
 QDS_HEADER_SIZE = 256
-VALID_TYPES = {'core', 'system', 'ui', 'compat', 'ai', 'net', 'user', 'dev'}
+VALID_TYPES = {'core', 'system', 'ui', 'compat', 'ai', 'net', 'user', 'dev', 'desktop'}
 
 # ---- .qdai 分隔标记 ----
 QD_SECTIONS = {
@@ -192,13 +192,19 @@ class QdaiParser:
 # ============================================================
 class ModuleLoader:
     def __init__(self, roots=None):
+        # 规范 7.1：/奇点OS 全树扫描（含 AI.qd 核心模块，R-LD-01 修复）
         self.roots = roots or ['/奇点OS/系统', '/奇点OS/用户.qd/模块']
+        self.extra_modules = ['/奇点OS/AI.qd', '/奇点OS/用户.qd']  # 顶层 .qd 模块本体
         self.modules = {}      # id -> module info
+        self.registry = {}     # 识别登记表（规范 7.3）：id -> 识别结果
         self.qds_services = {}  # name -> path
         self.qdai_rules = []    # list of parsed rules
 
     def scan(self):
-        """扫描所有根目录下的 .qd 模块"""
+        """扫描全树 .qd 模块（顶层模块 + 容器目录）"""
+        for extra in self.extra_modules:
+            if os.path.isdir(extra) and extra.endswith('.qd'):
+                self._load_module(extra)
         for root in self.roots:
             if not os.path.isdir(root):
                 continue
@@ -237,6 +243,17 @@ class ModuleLoader:
             'qds': [],
             'qdai': [],
             'submodules': [],
+        }
+
+        # 识别登记（规范 7.3）：type/name/entry/icon/window_hint → 供任何桌面查询
+        self.registry[meta['id']] = {
+            'type': meta.get('type'),
+            'name': meta.get('name'),
+            'entry': os.path.join(path, meta.get('entry', '')),
+            'icon': meta.get('icon'),
+            'window_hint': meta.get('window_hint', 'normal'),
+            'path': path,
+            'interface': meta.get('interface', {}),
         }
 
         # 扫描 .qds 和 .qdai
@@ -283,17 +300,31 @@ class ModuleLoader:
                 return False
         return True
 
+    # ---- 识别契约查询接口（规范 7.3）----
+    def query(self, module_id):
+        """桌面 / 模块问系统："这是什么" → 返回识别结果（无则 None）"""
+        return self.registry.get(module_id)
+
+    def desktop_candidates(self):
+        """返回全部 type=desktop 的模块（桌面候选列表，供设置切换）"""
+        return [r for r in self.registry.values() if r['type'] == 'desktop']
+
 
 # ============================================================
 # 主入口
 # ============================================================
 def main():
     loader = ModuleLoader()
-    print('=== 奇点OS 模块扫描 ===')
+    print('=== 奇点OS 模块扫描（全树，含 AI.qd） ===')
     mods = loader.scan()
     print(f'\n=== 扫描完成: {len(mods)} 个模块, '
           f'{len(loader.qds_services)} 个 .qds 服务, '
           f'{len(loader.qdai_rules)} 条 .qdai 规则 ===')
+    desks = loader.desktop_candidates()
+    if desks:
+        print(f'\n=== 桌面候选（type=desktop，可切换） ===')
+        for d in desks:
+            print(f'  {d["name"]:12s} entry={d["entry"]}')
     return 0 if mods else 1
 
 
