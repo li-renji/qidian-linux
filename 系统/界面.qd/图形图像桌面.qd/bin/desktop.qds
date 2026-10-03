@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""图形图像桌面.qd 模块入口 —— 规范附录 B.2 标准接口
+接口：start / stop / status / theme
+桌面组件收编于本模块 bin/（qwm + qd_desktop + ui_*，原 运行/ 组件）
+模块间只经本入口被调用；本模块内部组件可自由协作，对外仅暴露四命令。
+"""
+import os
+import sys
+import json
+import signal
+import subprocess
+
+BIN = os.path.dirname(os.path.abspath(__file__))
+PIDFILE = '/奇点OS/运行/.desktop.pids'
+
+# 常驻组件清单（按启动顺序；均收编于本模块 bin/）
+COMPONENTS = ['qwm.py', 'qd_desktop.py', 'ui_island.py', 'ui_dock.py']
+
+
+def _read_pids():
+    try:
+        with open(PIDFILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def _write_pids(pids):
+    os.makedirs(os.path.dirname(PIDFILE), exist_ok=True)
+    with open(PIDFILE, 'w', encoding='utf-8') as f:
+        json.dump(pids, f)
+
+
+def start():
+    """拉起桌面（qwm 窗口管理器 + 桌面壳 + 灵动岛 + Dock）"""
+    pids = _read_pids()
+    for comp in COMPONENTS:
+        if comp in pids:
+            try:
+                os.kill(pids[comp], 0)  # 已在跑则跳过
+                continue
+            except Exception:
+                pass
+        devnull = open(os.devnull, 'w')
+        p = subprocess.Popen(['/usr/bin/python3', os.path.join(BIN, comp)],
+                             stdout=devnull, stderr=subprocess.STDOUT,
+                             start_new_session=True)
+        pids[comp] = p.pid
+    _write_pids(pids)
+    print('desktop started: %s' % json.dumps(pids))
+
+
+def stop():
+    """停桌面组件（不动系统，组件可单独重启）"""
+    pids = _read_pids()
+    for comp, pid in pids.items():
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except Exception:
+            pass
+    _write_pids({})
+    print('desktop stopped')
+
+
+def status():
+    pids = _read_pids()
+    alive = {}
+    for comp, pid in pids.items():
+        try:
+            os.kill(pid, 0)
+            alive[comp] = 'running'
+        except Exception:
+            alive[comp] = 'dead'
+    print('desktop status: %s' % json.dumps(alive))
+
+
+def theme(name='dark'):
+    """主题切换（当前仅深色默认；浅色/自定义后续按配置实现）"""
+    print('theme: %s (当前仅深色默认)' % name)
+
+
+if __name__ == '__main__':
+    cmd = sys.argv[1] if len(sys.argv) > 1 else 'status'
+    {'start': start, 'stop': stop, 'status': status, 'theme': theme}.get(cmd, status)()
