@@ -1,4 +1,4 @@
-# 起点Linux发行版（奇点OS Linux开发版）
+# 起点Linux发行版（奇点OS Linux发行版）
 
 > 基于 Arch Linux 深度定制的模块化操作系统开发版。
 > 系统框架、模块规范与 AI 意图 Agent（INTENT）均为此仓库的原创设计。
