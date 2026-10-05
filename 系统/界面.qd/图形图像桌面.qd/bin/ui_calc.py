@@ -25,7 +25,6 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Pango
 
-sys.path.insert(0, '/奇点OS/运行')
 import qd_ui_common as C
 
 APP_TITLE = '计算器'
