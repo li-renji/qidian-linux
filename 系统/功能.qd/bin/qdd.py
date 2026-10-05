@@ -107,6 +107,7 @@ class ModuleRuntime:
         self._snap = {}     # path -> (mtime,size)
         self._lock = threading.Lock()
         self._procs = {}    # id -> Popen
+        self.bus_token = os.environ.get('QD_BUS_TOKEN', '')  # 控制命令权限令牌
 
     # ---- 热发现：全树扫描 ----
     def collect(self):
@@ -245,7 +246,13 @@ class ModuleRuntime:
             if entry.endswith('.qds'):
                 proc = self._run_qds(entry, mod)
             else:
-                proc = subprocess.Popen([sys.executable, entry],
+                guard = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'qd_guard.py')
+                if os.path.isfile(guard) and os.environ.get('QD_GUARD', '1') == '1':
+                    # 隔离拦截：跨模块 import 直接报错（AI.qd 豁免见 qd_guard）
+                    cmd = [sys.executable, guard, os.path.abspath(mod.path), os.path.abspath(entry)]
+                else:
+                    cmd = [sys.executable, os.path.abspath(entry)]
+                proc = subprocess.Popen(cmd,
                                         env=self._module_env(mod),
                                         stdout=subprocess.DEVNULL,
                                         stderr=subprocess.DEVNULL)
@@ -487,6 +494,11 @@ class BusServer:
 
     def _dispatch(self, req):
         cmd = req.get('cmd')
+        # 权限校验：控制类命令需要 token（list/status/scan 查询免 token）
+        if cmd in ('start', 'stop', 'unload', 'switch', 'replace', 'call'):
+            if self.rt.bus_token and req.get('token') != self.rt.bus_token:
+                return {'ok': False, 'err': 'permission_denied',
+                        'hint': '控制命令需携带 QD_BUS_TOKEN'}
         if cmd == 'list':
             return self.rt.status()
         if cmd == 'status':
@@ -548,6 +560,9 @@ def client(rt, args):
     """命令行客户端：走总线发命令"""
     def send(req):
         if os.path.exists(BUS_PATH) or BUS_PORT:
+            tok = os.environ.get('QD_BUS_TOKEN', '')
+            if tok and 'token' not in req:
+                req['token'] = tok   # CLI 客户端自动带 token
             s = socket.socket(socket.AF_UNIX if os.name != 'nt' else socket.AF_INET,
                               socket.SOCK_STREAM)
             s.settimeout(5)
