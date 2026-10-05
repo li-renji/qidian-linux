@@ -317,7 +317,6 @@ class Tree(Gtk.DrawingArea):
     def _move_to_trash(self, node):
         """把文件/目录移入回收站，刷新视图"""
         try:
-            sys.path.insert(0, "/奇点OS/运行")
             from ui_trash import trash_move
 
             if trash_move(node.path):
