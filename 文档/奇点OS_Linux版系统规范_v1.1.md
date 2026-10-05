@@ -866,7 +866,7 @@ GUI/终端渲染：真实回复（大字）+ 决策过程（意图分类 · 规�
   → 生成模块树快照
 ```
 
-* **全树范围（2026-10-03 明确）**：`/奇点OS` 全树 = AI.qd / 系统 / 用户.qd / 运行 / 文档——**AI.qd 是系统级核心模块，必须纳入扫描与模块树快照，不允许排除**。实现偏差：qd_loader 当前扫描根限定 `/奇点OS/系统` 与 `/奇点OS/用户.qd/模块`，漏掉 AI.qd（验收项 R-LD-01，待修正）。
+* **全树范围（2026-10-03 明确）**：`/奇点OS` 全树 = AI.qd / 系统 / 用户.qd / 运行 / 文档——**AI.qd 是系统级核心模块，必须纳入扫描与模块树快照，不允许排除**。**实现状态（2026-10-05）**：`qd_loader.py` 已全树扫描（含 AI.qd / 用户.qd 顶层），本项已修复。
 
 ### 7.2 依赖检查
 
@@ -880,7 +880,29 @@ GUI/终端渲染：真实回复（大字）+ 决策过程（意图分类 · 规�
 * **查询接口**：系统通过 QD-IPC 提供识别查询（"这是什么"→返回识别结果）。任何桌面 / 模块只通过查询接口取识别结果，**禁止桌面自行猜测"是不是软件"**，禁止把识别逻辑写进任何特定桌面的代码。
 * **识别与呈现分离**：识别 = 系统责任（本契约）；呈现 = 桌面责任（见附录 B.2）。桌面坏了可换，识别永远在。
 
+### 7.4 模块运行时（qdd，2026-10-05 新增）🟢
 
+**定位**：模块化不是目录结构，是运行时机制。`系统/功能.qd/bin/qdd.py` 为常驻守护，落地六机制；无此运行时，.qd/.qds/.qdai 仅是文件组织约定。
+
+| 机制 | 实现 | 验证结果（2026-10-05） |
+| --- | --- | --- |
+| **热发现** | 轮询快照 diff（.qd/.qds/.qdai/.qdmeta 增改删），自动注册/更新/注销，无需重启 | ✅ 新增 .qd 自动注册、删除自动注销 |
+| **统一生命周期** | 状态机 stopped/running/error；start/stop/status/unload；.py/.qds 入口 Popen + pid 跟踪 | ✅ start→running(pid)、stop→stopped |
+| **热替换** | `switch(type, new_id)`：同类型多实现，停旧启新（桌面/AI/服务通用） | ✅ desktop A→B，A 停 B 保持运行 |
+| **调用隔离** | 扫描模块代码，跨模块 `sys.path.insert`/import 运行 等违反契约 → flags 标记；AI.qd 豁免 | ✅ 抓出 qd-ui/qd-ui-desktop 的 sys.path 注入 |
+| **通讯总线** | `/run/qd/qd_bus.sock`（VM，UNIX socket）/ TCP（测试）；JSON 协议：list/status/start/stop/unload/switch/scan/call | ✅ 总线命令全通 |
+| **权限分级** | module.qdmeta `type` → priv：ai/core=3、system/ui/desktop/compat=2、user/dev/net=1 | ✅ 注册时分级 |
+
+**总线协议**（模块间唯一调用通道）：
+```
+{"cmd":"list"|"status"|"start"|"stop"|"unload"|"switch"|"scan"|"call", ...}
+```
+* `call`：`{"cmd":"call","id":模块ID,"cmd":子命令,"payload":{...}}` → 投递到模块进程
+* 模块进程监听 QD_BUS 环境变量指向的总线；投递失败返回 `not_available`，禁止 fallback 到文件/import
+
+**运行**：`python3 /奇点OS/系统/功能.qd/bin/qdd.py daemon`（纳入系统启动链）；`once` 单次扫描、`list/start/stop/switch` 为命令行客户端。
+
+**隔离强制（演进）**：当前为"检测+标记"（flags），模块注册后仍可运行但带告警；下一阶段升级为"拦截"（违规模块拒绝注册，需 qdmeta 显式豁免）。
 
 ***
 
