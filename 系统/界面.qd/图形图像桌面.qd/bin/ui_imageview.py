@@ -19,7 +19,6 @@ gi.require_version('Gtk', '3.0')
 gi.require_version('GdkPixbuf', '2.0')
 from gi.repository import Gtk, Gdk, GdkPixbuf, GLib
 
-sys.path.insert(0, '/奇点OS/运行')
 import qd_ui_common as C
 
 APP_TITLE = '图片查看器'
