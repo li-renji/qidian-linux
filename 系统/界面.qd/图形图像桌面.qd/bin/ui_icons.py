@@ -14,8 +14,6 @@
 # 点击区尺寸与绘制尺寸同源（C.icon_cell），保证点了不偏。
 # ============================================================
 import os, sys, json, time, socket, subprocess, threading, shlex, select, signal
-
-sys.path.insert(0, "/奇点OS/运行")
 # 僵尸防护：本进程会频繁 Popen 起 feh 且不 wait，子进程退出后无人回收会
 # 变成僵尸堆积（实测 28+）。忽略 SIGCHLD 交给内核自动回收。
 try:
