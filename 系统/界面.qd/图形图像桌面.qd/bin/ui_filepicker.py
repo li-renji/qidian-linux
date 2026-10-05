@@ -22,7 +22,6 @@ gi.require_version("PangoCairo", "1.0")
 from gi.repository import Gtk, Gdk, GLib, Pango, PangoCairo
 import cairo
 
-sys.path.insert(0, "/奇点OS/运行")
 import qd_ui_common as C
 
 WIN_W, WIN_H = 540, 420
