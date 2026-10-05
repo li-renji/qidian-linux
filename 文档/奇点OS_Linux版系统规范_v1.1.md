@@ -424,6 +424,68 @@ trigger: auto
 
 * 规则体禁止 noop 占位
 
+### 3.3.1 .qdai 运行时接入契约（Agent 如何调用规则，2026-10-06 明确）
+
+**实现**：`AI.qd/intent_agent.qd/rule_engine.py`（规则引擎）+ `module_main` 三处接入。
+
+**① 加载时机与范围**
+- 启动时：意图 Agent（INTENT）`__init__` 阶段**全树加载**所有 `.qdai`（/奇点OS 下所有 .qd 模块内 + AI.qd 根部），解析 YAML 头 + 五段式。
+- 运行中：`rules-reload` 命令重载（.qdai 文件被修改后生效）。
+- 范围是**全树**，不是只 AI.qd 内——任何模块的 .qdai 都能约束 Agent 行为。
+
+**② 五段式生效机制（每段谁读、怎么用）**
+
+| 段 | 谁来读 | 怎么用 | 产出 |
+|---|---|---|---|
+| NATURAL_LANGUAGE | Agent 启动 | 按优先级拼接进**系统提示**（行为约束） | `system_rules`（实测 18 规则 ≈ 3000 字） |
+| STRUCTURED_RULES | 工具执行前 | JSON 规则表 `check_action(tool)`：deny 命中 → 拒绝执行，返回 `PERM` + 规则名 | 执行拦截 |
+| CONTRACT | AI 生成代码时 | 契约库（sdk/test_hook 场景的前置约束模板） | 代码生成门禁 |
+| LUA | IO 路由/数据转发 | 沙箱执行（Linux 版用系统 lua + 沙箱，见 3.4） | 路由转发 |
+| KNOWLEDGE | 知识库建立 | 注入知识库.qd 条目 | 知识注入 |
+
+**③ 工具执行校验链（execute_tool 内）**
+```
+用户意图 → qdai check_action(tool) ← 新增，最先执行
+         → 低置信度拦截(5.9.6) → 权限令牌(5.9.2) → 注入防护(5.9.1) → 工具契约(5.9.4)
+```
+qdai 规则**只做允许/拒绝，不越权**——放行后工具仍走眼/笔/橡皮令牌闸门。
+
+**④ 跳转规则**
+- 起点：`AI.qd` 内 .qdai；目标：其他 .qdai（`target:` 字段指向规则名）。
+- 执行：`rules --text <触发词>` → `resolve_jump()` 命中 trigger → 目标规则优先生效。
+- 约定：`target: auto` = 不跳转；`trigger: auto` = 由 Agent 在意图分类时决定是否跳转。
+
+**⑤ 优先级与冲突**
+- `priority` 0–100，**高者先生效**（intent_agent 自身 90 最高，保证自身约束不被模块规则覆盖）。
+- 同优先级按路径字典序。
+- 冲突：deny 优先于 allow（安全保守）。
+
+**⑥ 权限边界**
+- 规则引擎只读 .qdai；规则内工具调用仍过 Agent 权限闸门。
+- 规则引擎不写文件、不执行 LUA 段以外的代码、不跨模块访问。
+
+**⑦ 编写模板（新模块必须带）**
+```
+---
+name: 规则名（唯一）
+target: auto            # 跳转目标规则名；auto=不跳转
+priority: 50            # 0-100，高者先生效
+trigger: auto           # 触发条件；auto=Agent 意图分类决定
+---
+===QD_SECTION_NATURAL_LANGUAGE===
+（自然语言：本模块行为约束，如"本模块禁用 X，优先使用 Y"）
+===QD_SECTION_STRUCTURED_RULES===
+[{"action":"tool/name","deny":true,"note":"原因"}]   # JSON，禁 noop
+===QD_SECTION_CONTRACT===
+（架构规则+接口契约：AI 为模块生成代码时的前置约束）
+===QD_SECTION_LUA===
+（可选：沙箱脚本，IO 路由/数据转发）
+===QD_SECTION_KNOWLEDGE===
+（可选：知识注入内容）
+```
+
+**自检命令**：`python3 /奇点OS/AI.qd/intent_agent.qd/rule_engine.py` → 列出全部规则、缺 CONTRACT 段计数（缺 CONTRACT 段 = 不合规，模块自检报错）。
+
 ### 3.4 Linux 版移植差异（唯一改动点）
 
 
