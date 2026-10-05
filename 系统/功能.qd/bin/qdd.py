@@ -281,10 +281,18 @@ class ModuleRuntime:
     def _run_qds(self, path, mod):
         with open(path, 'rb') as f:
             data = f.read()
+        # 安全校验：magic + 头边界（规范：QDSS 容器必须校验，禁止裸执行）
+        if len(data) < 256:
+            raise ValueError(f'QDSS 容器过短: {path}')
+        magic = struct.unpack_from('<I', data, 0)[0]
+        if magic != QDS_MAGIC:
+            raise ValueError(f'QDSS magic 校验失败(0x{magic:08X}): {path}')
         head = data[:256]
         bin_off = struct.unpack_from('<I', head, 136)[0]
         bin_sz = struct.unpack_from('<Q', head, 144)[0]
         payload = struct.unpack_from('<I', head, 200)[0]
+        if bin_off < 256 or bin_off + bin_sz > len(data) or bin_sz <= 0:
+            raise ValueError(f'QDSS 边界校验失败: {path}')
         elf = data[bin_off:bin_off + bin_sz]
         suffix = '.py' if payload == 1 else '.bin'
         tmp = tempfile.NamedTemporaryFile(prefix='qd_', suffix=suffix, delete=False)
