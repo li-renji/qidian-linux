@@ -90,7 +90,7 @@ class Module:
     def to_dict(self):
         return {'id': self.id, 'name': self.name, 'type': self.type,
                 'version': self.version, 'state': self.state, 'pid': self.pid,
-                'priv': self.priv, 'flags': self.flags,
+                'priv': self.priv, 'flags': self.flags, 'error': self.error,
                 'entry': self.entry, 'path': self.path,
                 'qds': [q.get('name') for q in self.qds],
                 'qdai': [r.get('meta', {}).get('name', '') for r in self.qdai],
@@ -319,6 +319,21 @@ class ModuleRuntime:
         log(f'[stop] {mid}')
         return {'ok': True, 'state': 'stopped'}
 
+    def heartbeat(self):
+        """进程存活实时检测：running 模块进程退出 → 立即更新状态（防谎报）"""
+        with self._lock:
+            for mid, proc in list(self._procs.items()):
+                code = proc.poll()
+                if code is None:
+                    continue
+                mod = self.modules.get(mid)
+                if mod:
+                    mod.state = 'error' if code != 0 else 'stopped'
+                    mod.error = f'进程退出 code={code}'
+                    mod.pid = None
+                    log(f'[心跳] {mid} 进程退出 code={code} → state={mod.state}')
+                self._procs.pop(mid, None)
+
     def status(self, mid=None):
         with self._lock:
             if mid:
@@ -510,6 +525,7 @@ def daemon(rt):
     while True:
         time.sleep(POLL_INTERVAL)
         try:
+            rt.heartbeat()  # 状态实时性：进程退出立即反映，不谎报
             cur = rt.collect()
             diff = False
             if len(cur) != len(last):
