@@ -6,7 +6,7 @@
 
 ## 这是什么
 
-奇点 Linux 发行版是一套**以模块化为核心**、面向人机互联 / AGI 场景自制 Linux 系统：
+奇点 Linux 发行版是一套**以模块化为核心**、面向人机互联 / AGI 场景的自制 Linux 系统：
 
 - **模块体系 `.QD / .QDS / .QDai`**：
   - `.QD` 文件夹 = 一个模块（程序本体 + 调用逻辑打包在一起），系统启动时扫描全部 `.QD` 并加载其中的 `.QDS`；
@@ -38,7 +38,23 @@
 - [AI 本地 Agent 调用文档](第四次重构版/文档/奇点Linux发行版_AI本地Agent调用文档_v1.0.md) —— AI.QD 子系统 / .qdai 双用法 / AI 调用主系统
 - [开发文档 v1.9（历史版）](第四次重构版/文档/奇点OS_第四次重构版_开发文档_v1.9.md) —— 上一版全量记录与审查修复记录
 
-## 快速开始（QEMU）
+## 仓库内容（第四次重构版源码）
+
+```
+第四次重构版/
+├─ init/            自研 init（1 号进程，C 源码，musl 静态编译）
+├─ ai.qd/           AI 子系统（ai.qdai 约束 + ai_service.c 常驻服务源码）
+├─ 引导/            boot.qds 引导文件
+├─ 模块引擎/        module-engine.c 主系统引擎（模块容器 / me> 控制台）
+├─ 模块/            包管理.qd / 渲染器.qd / 用户态.qd（.qds 契约 + C 源码）
+├─ scripts/         启动最小 demo.ps1（Windows 侧演示脚本）
+└─ 文档/            开发文档 v1.10 / v1.9 / 包管理 / AI 调用
+```
+
+- 内核（6.1.115 自编译 bzImage）、rootfs、ext4 镜像是**本地构建产物，不入库**；完整构建流程见开发文档第 5 章。
+- 旧版实现（Ubuntu 组件基底 + XFCE 深度定制 + 双框架 AI.qd/系统.qd）保留在仓库根目录的 `AI.qd/`、`系统/`、`运行/` 中，供参考与迁移。
+
+## 快速开始（构建后 QEMU）
 
 ```
 qemu-system-x86_64 -accel whpx -m 2048 -smp 2 \
@@ -50,12 +66,6 @@ qemu-system-x86_64 -accel whpx -m 2048 -smp 2 \
 - 引导链自动运行：init → boot.qds → ai_service（就绪）→ module-engine（`me>` 控制台）；
 - AI 对话：主系统界面 / 串口 `me> ai <消息>` → ai_service → 云端 OpenAI 兼容接口；
 - 模块管理：`me> list / modules / run <模块> / install / remove / module start|stop`。
-
-## 构建（WSL 交叉编译车间）
-
-- 工具链：`x86_64-linux-musl-gcc`（musl-cross），全部程序静态编译；
-- 关键脚本：`build_rootfs.sh`（编译 init / module-engine / ai_service / 模块）、`pack_image.sh`（ext4 免挂载打包）、`rebuild_busybox.sh`；
-- 详细流程见开发文档第 5 章。
 
 ## 已知限制
 
