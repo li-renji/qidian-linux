@@ -1,7 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=奇点OS文件浏览器(常驻)
-Comment=常驻后台，点击图标秒开
-Exec=python3 /奇点OS/运行/qd_fm.py --daemon
-X-GNOME-Autostart-enabled=true
-NoDisplay=true
