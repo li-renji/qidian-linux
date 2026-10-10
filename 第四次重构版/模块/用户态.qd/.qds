@@ -1,0 +1,5 @@
+type=guide
+name=用户态
+version=2.0
+desc=主系统用户态模块：VNC 图形会话（fb自绘+raw键盘，中文完整显示；无fb回退文本），桌面/结构/模块/安装/卸载/仓库/ai
+entry=bin/uis

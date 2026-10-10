@@ -1,0 +1,5 @@
+type=guide
+name=渲染器
+version=2.0
+desc=主系统渲染器模块：文本组件 + fb自绘图形后端（fbdesktop/fbfile/fbbar），完整中文显示，可替换
+entry=bin/render

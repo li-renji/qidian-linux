@@ -1,0 +1,5 @@
+type=guide
+name=包管理
+version=1.0
+desc=主系统包管理模块：install/remove/repo/list/info，从 /仓库/实体 安装到 /modules
+entry=bin/pm

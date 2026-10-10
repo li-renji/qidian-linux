@@ -1,0 +1,110 @@
+#!/bin/sh
+# ============================================================
+# 奇点OS 引导文件 boot.qds v0.7（第四次重构版）
+# 位置：根目录 /boot.qds，由 init(1号进程) 执行
+#
+# v0.7 变更（主系统图形后端 /dev/fb0）：
+#   - tmpfs /dev 不自动建节点：mknod /dev/fb0（主设备 29）、/dev/tty0（主设备 4）
+#   - 主系统界面走 fb 自绘（渲染器 fbdesktop/fbfile/fbbar），中文完整显示
+#
+# v0.6 变更（主系统 VNC 主画面）：
+#   - ai_service 后台化：6800 常驻服务，不再绑定 /dev/tty0
+#   - VNC 主画面 = 主系统用户界面（module-engine 挂载 用户态.qd 到 tty0）
+#   - AI 访问入口：主系统界面 ai 命令 / me> ai（均走 6800）
+#
+# v0.5 变更（主系统模块化）：
+#   - 主系统 = 模块容器：/modules 下挂 包管理/渲染器/用户态 等系统级 .qd 模块
+#   - 主框架入口 module-engine v0.3 负责扫描契约、run 模块、6801、授权、记忆
+#   - 本文件职责收窄为：配置网络 → 激活 ai.qd 子系统 → 监督循环激活主系统
+#
+# v0.4 变更：
+#   - 配置 guest 网络（QEMU user 模式：eth0 10.0.2.15，网关 10.0.2.2，DNS 10.0.2.3）
+#   - 就绪判定改为进程存活检查（kill -0）
+#
+# 架构（用户确认）：
+#   子框架.qd/ —— 顶层框架，承载所有子系统
+#     ├─ ai.qd/        AI 子系统（最小独立系统 + 专属隔离容器）
+#     └─ 主框架.qd/    主系统的框架（搭建在子系统框架下）
+#         └─ module-engine  主系统引擎（模块容器）
+#     /modules/        系统级 .qd 模块（包管理/渲染器/用户态…）
+# ============================================================
+
+echo "[引导] 奇点OS 引导文件 boot.qds v0.7 启动"
+
+# ---- 0. 设备节点（tmpfs /dev 不自动建节点，手动 mknod）----
+# fb0 主设备号 29（主系统图形后端 /dev/fb0 自绘必需）
+mknod /dev/fb0 c 29 0 2>/dev/null
+# tty0 主设备号 4（主系统用户界面键盘/终端）
+mknod /dev/tty0 c 4 0 2>/dev/null
+
+# ---- 0. 加载 CJK 控制台字体（自绘字形数据来源）----
+echo "[引导] 检查 CJK 点阵字体（自绘字形）..."
+if [ ! -f /usr/share/consolefonts/unifont-16.psf ]; then
+    echo "[引导] 警告: 字体缺失 /usr/share/consolefonts/unifont-16.psf，界面中文会显示为方块"
+fi
+
+# ---- 0. 配置 guest 网络（QEMU user 模式）----
+echo "[引导] 配置网络（lo + eth0 10.0.2.15）..."
+ifconfig lo 127.0.0.1 netmask 255.0.0.0 up 2>/dev/null
+ifconfig eth0 10.0.2.15 netmask 255.255.255.0 up 2>/dev/null
+route add default gw 10.0.2.2 2>/dev/null
+mkdir -p /etc
+echo "nameserver 10.0.2.3" > /etc/resolv.conf
+# 容器内也配置 DNS（chroot 后使用容器自己的 /etc/resolv.conf，否则 wget 无法解析域名）
+mkdir -p /子框架.qd/ai.qd/etc
+echo "nameserver 10.0.2.3" > /子框架.qd/ai.qd/etc/resolv.conf
+
+# ---- 0.1 网络自测（交付前已移除，链路经 ai_service 云端调用自证）----
+
+echo "[引导] 激活子系统框架：ai.qd ..."
+
+# ---- 1. 激活 ai.qd 子系统（专属隔离容器）----
+AISVC="/子框架.qd/ai.qd/bin/ai_service"
+if ! mountpoint -q /子框架.qd/ai.qd/dev 2>/dev/null; then
+    mkdir -p /子框架.qd/ai.qd/dev
+    mount -t devtmpfs devtmpfs /子框架.qd/ai.qd/dev 2>/dev/null
+    # 容器内兜底设备节点（tty0 主设备号是 4，不是 5）
+    mknod /子框架.qd/ai.qd/dev/null c 1 3 2>/dev/null
+    mknod /子框架.qd/ai.qd/dev/console c 5 1 2>/dev/null
+    mknod /子框架.qd/ai.qd/dev/tty0 c 4 0 2>/dev/null
+fi
+
+if [ -x "$AISVC" ]; then
+    # v0.6：AI 子系统后台化（6800 常驻服务），VNC 主画面交给主系统用户界面
+    # （用户态.qd 提供 ai 命令经 6800 访问 AI，配置可通过 me> config set ai.qd 修改）
+    chroot /子框架.qd/ai.qd /bin/ai_service --daemon </dev/null >/tmp/ai.log 2>&1 &
+    AI_PID=$!
+    # 就绪判定：进程存活
+    I=0
+    while [ $I -lt 30 ]; do
+        if kill -0 $AI_PID 2>/dev/null; then
+            break
+        fi
+        I=$((I + 1))
+        sleep 0.1
+    done
+    if kill -0 $AI_PID 2>/dev/null; then
+        echo "[引导] ai.qd 子系统（AI 服务）已就绪 (PID=$AI_PID，6800 常驻)"
+    else
+        echo "[引导] 警告: AI 服务未存活，退出码 $?"
+    fi
+else
+    echo "[引导] 错误: $AISVC 不存在，AI 子系统启动失败"
+fi
+
+# ---- 2. 子系统激活主系统（监督循环：崩溃自动重启）----
+MAIN="/子框架.qd/主框架.qd/module-engine"
+if [ ! -x "$MAIN" ]; then
+    echo "[引导] 错误: $MAIN 缺失，主系统无法激活"
+    exec /bin/sh
+fi
+
+RESTART=0
+while true; do
+    echo "[引导] 子系统激活主系统（主框架）..."
+    "$MAIN"
+    CODE=$?
+    RESTART=$((RESTART + 1))
+    echo "[引导] 主系统退出(code=$CODE)，子系统正常运行中；第 $RESTART 次重新激活主系统..."
+    sleep 2
+done
