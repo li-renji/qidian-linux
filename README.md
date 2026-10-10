@@ -1,61 +1,67 @@
-# 起点Linux发行版（奇点OS Linux发行版）
+# 奇点 Linux 发行版（第四次重构版）
 
-> 基于 Arch Linux 深度定制的模块化操作系统发行版。
-> 系统框架、模块规范与 AI 意图 Agent（INTENT）均为此仓库的原创设计。
+> 从零构建（LFS 思路）的模块化 Linux 发行版：**Linux 内核 + 奇点 OS 自制 rootfs + 自研 init + 模块化框架**。
+> 不捆绑任何发行版（不依赖 Arch / Ubuntu），需要什么组件就单独编译源码，打包成 `.qd/.qds` 模块。
+> 系统框架、模块规范与 AI 子系统均为此仓库的原创设计。
 
 ## 这是什么
 
-起点Linux发行版是一套**以模块化为核心**的 Linux 系统框架：
+奇点 Linux 发行版是一套**以模块化为核心**、面向人机互联 / AGI 场景自制 Linux 系统：
 
-- **点 QD / QDS / QDAI 模块体系**：功能以 `.qd` 文件夹为模块单位（自带独立 Git 仓库），系统级单文件 `.qds`、AI 标记文件 `.qdai` 协同工作，模块可热加载、可独立崩溃而不拖垮系统。
-- **自研窗口管理器 qwm**：Python 编写的桌面环境，提供灵动岛、底部快捷栏、窗口收编与自愈（窗口漏接 3 秒内自动回收）。
-- **意图 Agent（INTENT）**：系统级 AI 智能体，支持文本（MiniCPM-2B）、视觉（SmolVLM2）、判断门（Laya）、语音链（VAD/ASR/TTS）的全本地模型栈，默认按需加载、不用不载。
-- **微服务与 SHM IPC**：低功耗常驻微服务 + 共享内存通信，支撑模块间与 AI 调度。
+- **模块体系 `.QD / .QDS / .QDai`**：
+  - `.QD` 文件夹 = 一个模块（程序本体 + 调用逻辑打包在一起），系统启动时扫描全部 `.QD` 并加载其中的 `.QDS`；
+  - `.QDS` 定义 QD 的 **AI 调用 / 系统调用 / 安全边界**（热发现 / 热插拔 / 热替换 / 调用隔离 / 统一生命周期 / 模块间总线）；
+  - `.qdai` 是 AI 调用主系统的**唯一通道**（ai.qd 内为引导，主系统内为自然语言 + PY 脚本调用规范）。
+- **AI.QD 子系统**：独立运行、强安全隔离的最小 AI 子系统（chroot 专属隔离容器 + 常驻 AI 服务），支持云端 API（OpenAI 兼容）与本地模型（按需加载、用一个调一个）。
+- **自研控制链**：内核 → `/sbin/init`（1 号进程，无 systemd）→ `boot.qds` 引导 → ai.qd 子系统 → 主系统 module-engine（监督循环，崩溃自动重启）。
+- **极端环境可跑**：仅 CPU、骨架模式系统总占用 ≤ 1G、带本地 AI ≤ 4G 整机内存。
 
 ## 系统架构
 
 ```
 硬件
- └─ Linux 内核（Arch）
-     └─ 奇点OS 框架（本仓库）
-         ├─ 系统.qd   功能 / 界面 / 微服务 / 虚拟化
-         ├─ AI.qd     意图 Agent + 推理引擎 + 模型库(registry)
-         ├─ 用户.qd   用户数据与安装的模块
-         └─ 运行/     qwm 窗口管理器、系统服务、启动脚本
+ └─ Linux 内核（6.1.115，自编译裁剪）
+     └─ 奇点OS rootfs（musl 交叉静态编译，无宿主库污染）
+         ├─ sbin/init           1 号进程（自研，无 systemd）
+         ├─ boot.qds            引导文件（激活子系统）
+         ├─ 子框架.qd/
+         │   ├─ ai.qd/          AI 子系统（chroot 隔离 + ai_service 6800）
+         │   └─ 主框架.qd/      主系统（module-engine + 记忆.qd + 资源管理）
+         ├─ modules/            .QD 模块区（包管理 / 渲染器 / 用户态 …）
+         └─ 仓库/               包仓库（索引 + 实体/）
 ```
 
-## 快速开始
+## 文档
 
-1. 准备 Arch Linux 虚拟机（QEMU/KVM 均可），或实机安装 Arch 后把本仓库放到 `/奇点OS`。
-2. 首次启动由 `运行/qd-os-start.sh` 拉起系统服务与桌面（qwm 自启逻辑见 `~/.xinitrc`）。
-3. **安装模型**：见 [模型清单.md](模型清单.md) —— 系统首次启动会检测模型是否齐全，缺失时提示按清单安装。
-4. 使用意图 Agent：终端执行 `qd-intent "你好"`，或通过桌面 AI 入口对话。
+- [开发文档 v1.10](第四次重构版/文档/奇点Linux发行版_开发文档_v1.10.md) —— 发行版总纲（架构 / 引导链 / 构建 / 验证 / 路线图）
+- [包管理模块统一文档](第四次重构版/文档/奇点Linux发行版_包管理模块统一文档_v1.0.md) —— .QD 打包 / .QDS 契约 / 热替换 / 仓库
+- [AI 本地 Agent 调用文档](第四次重构版/文档/奇点Linux发行版_AI本地Agent调用文档_v1.0.md) —— AI.QD 子系统 / .qdai 双用法 / AI 调用主系统
+- [开发文档 v1.9（历史版）](第四次重构版/文档/奇点OS_第四次重构版_开发文档_v1.9.md) —— 上一版全量记录与审查修复记录
 
-> 本仓库只含框架与系统本体，不含模型文件（体积限制）。
-> 模型按 [模型清单.md](模型清单.md) 下载后放入 `AI.qd/模型库/` 对应目录即可。
-
-## 目录结构
+## 快速开始（QEMU）
 
 ```
-/奇点OS
-├─ 系统.qd          # 功能 / 界面 / 微服务 / 虚拟化 等系统模块
-├─ AI.qd            # 意图 Agent、推理引擎适配层、模型库注册表
-├─ 用户.qd          # 用户数据与用户安装的模块
-├─ 运行/            # qwm、系统服务、启动脚本、发行版身份
-├─ 文档/            # 系统规范 v1.1、Agent 重构设计、立项书
-└─ tmp/             # 临时运行目录
+qemu-system-x86_64 -accel whpx -m 2048 -smp 2 \
+  -vga virtio -kernel bzImage -hda sos-rootfs.img \
+  -append 'root=/dev/sda rootfstype=ext4 rw console=ttyS0' \
+  -display vnc=127.0.0.1:1
 ```
 
-## 规范文档
+- 引导链自动运行：init → boot.qds → ai_service（就绪）→ module-engine（`me>` 控制台）；
+- AI 对话：主系统界面 / 串口 `me> ai <消息>` → ai_service → 云端 OpenAI 兼容接口；
+- 模块管理：`me> list / modules / run <模块> / install / remove / module start|stop`。
 
-- [奇点OS_Linux版系统规范_v1.1.md](文档/奇点OS_Linux版系统规范_v1.1.md) —— 系统总规范（点 QD/QDS/QDAI 定义、模块约束、AI 调度）
-- [奇点OS_意图Agent_重构设计_v1.md](文档/奇点OS_意图Agent_重构设计_v1.md) —— INTENT Agent 的架构、工作流与记忆设计
+## 构建（WSL 交叉编译车间）
+
+- 工具链：`x86_64-linux-musl-gcc`（musl-cross），全部程序静态编译；
+- 关键脚本：`build_rootfs.sh`（编译 init / module-engine / ai_service / 模块）、`pack_image.sh`（ext4 免挂载打包）、`rebuild_busybox.sh`；
+- 详细流程见开发文档第 5 章。
 
 ## 已知限制
 
-- 窗口管理器 qwm 为 Python 实现，高频事件下有 CPU 空转风险（G.17 补丁已缓解），复杂桌面场景建议后续用原生语言重写核心循环。
-- 语音链（VAD/ASR/TTS）默认关闭，需在系统设置中手动开启（实验性）。
-- 本地模型为纯 CPU 推理，速度受硬件限制；请按需加载，用完即释放。
+- 模块总线（UDS）、统一生命周期监督、`.QDS` 安全边界解析为**已设计、逐步落地中**（见开发文档状态表 ✅/📐）；
+- 本地 LLM（MiniCPM-2B 等）为纯 CPU 推理，按需加载、不用即不加载；
+- 语音链（VAD/ASR/TTS）为实验性功能，默认关闭，需用户在设置中手动开启。
 
 ## 许可
 
