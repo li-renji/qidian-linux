@@ -1,6 +1,6 @@
-# 奇点 Linux 发行版（奇点 OS 第四次重构版）开发文档 v1.14
+# 奇点 Linux 发行版（奇点 OS 第四次重构版）开发文档 v1.15
 
-> 更新日期：2026-10-13（v1.13：**文档与现实对齐**——对照实际源码与镜像逐项核账，清除"声称已实现但实际不存在"的内容：桌面.qd / Xfce 两阶段安装 / 6 个模块 / 热替换演示均为 v1.11 未落地描述，全面更正为自研桌面路线（boot.qds v0.10 + 渲染器 fbdesktop + 用户态 uis）；状态总表同步真实实现（包管理/6801/config 已落地，契约解析仅 entry/version/desc、sys_deps 未解析）；同步修正三处 Xfce 残留描述。v1.14：**模块化边界判据更新**——用户明确"可替换系统层用模块，不可替换不用模块"，子文档包管理 v1.4→v1.5 重定义判据，本文档同步引用）
+> 更新日期：2026-10-13（v1.13：**文档与现实对齐**——对照实际源码与镜像逐项核账，清除"声称已实现但实际不存在"的内容：桌面.qd / Xfce 两阶段安装 / 6 个模块 / 热替换演示均为 v1.11 未落地描述，全面更正为自研桌面路线（boot.qds v0.10 + 渲染器 fbdesktop + 用户态 uis）；状态总表同步真实实现（包管理/6801/config 已落地，契约解析仅 entry/version/desc、sys_deps 未解析）；同步修正三处 Xfce 残留描述。v1.14：**模块化边界判据更新**——用户明确"可替换系统层用模块，不可替换不用模块"，子文档包管理 v1.4→v1.5 重定义判据，本文档同步引用。v1.15：**转译桌面落地与可视化验收**——用户拍板"自研转译桌面"（借鉴 Xfce 绘制/交互思路、代码自研、不依赖 X11/GTK），desktop.c v1.0 + 渲染器 v2.1 在 QEMU/VNC full 模式通过真实交互验收（开窗 / 键盘 / help / date 透传 / AI 对话 6800→云端 / exit 关闭）；init.c 鼠标链路修复（devtmpfs 挂载 EBUSY 回退 tmpfs 保留 /dev/input）；boot.qds 定稿 v0.11；心跳低频化（60s 一条））
 > 定位：LFS 式自制发行版（Linux 6.1.115 内核 + 奇点 OS 自制 rootfs + 自研 init + 引导文件 + 模块化框架），不捆绑任何发行版
 > 编译车间：Windows WSL Ubuntu 24.04（musl 交叉工具链）
 > 项目根（PRJ）：`D:\C盘\Users\人机\Desktop\旧版奇点OS\完整版\第四次重构版`
@@ -32,6 +32,7 @@
 | v1.12      | 2026-10-13 | **（为什么）第四次重构能力升级方案定稿，将"主/子框架拆分 + 对外 Agent API + 可选模块"从设计落到文档**。改了什么：① 3.1/4.2 新增 QD_MODE 三模式（full/main/ai）与单框架独立启动（ai 模式补 watchdog——此前 ai_service 无重启者，崩了就死）；② 3.3 补 QD_MODE 经内核 cmdline/QEMU 传入；③ 3.4 补 ai 模式 watchdog 就绪判定语义；④ 4.4 补 6802 HTTP OpenAI 兼容 API、三端口职责分离（6800 对话/6801 内部转发/6802 对外）、工具清单配置化；⑤ 7A.5 补可选模块（REA）网络拉取前置条件；⑥ 7B 补单框架模式预算（ai ≤0.5G / main ≤0.5G，几百 MB 设备可跑）；⑦ 路线图新增 Flutter 软件级生态、RAD 远期观察、REA 可选模块、QD 浏览器选型；⑧ 文头关联文档与正文三处"包管理文档 v1.1"统一修正为实际版本 v1.3、AI 文档 v1.2（消除引用滞后/孤儿引用） |
 | v1.13      | 2026-10-13 | **（为什么）文档与现实对齐**：清除 v1.11/v1.12 中"声称已实现但实际不存在"的内容。改了什么：① 状态总表、1.1、3.1.1、4.2.1、7A.1、7B.5 中"桌面.qd（Xfce 两阶段安装）✅ 已实现 / 6 个模块 / 热替换移出放回已验证 / 图形界面=桌面.qd（Xfce）"全部更正——**桌面.qd 模块实际不存在**（Windows 侧与镜像内 /modules 均无），Xfce 路线已由 boot.qds v0.10 自研桌面（渲染器 fbdesktop + 用户态 uis）取代；② 状态总表按源码实测更新：包管理（install/remove/repo/config）✅ 已实现、6801 内部链路 ✅ 已实现（module-engine 监听）、模块契约解析仅 entry/version/desc（sys_deps 未解析）；③ 仓库实体/ 实际存放 REA.qd/QD浏览器.qd（非桌面.qd）；④ 6 节验证记录更新为自研桌面实测（render SHA `20cf2b19…`，segfault=0）；⑤ 附 v1.13 审查修复记录；⑥ 同步修正三处 Xfce 残留描述与子文档版本引用（v1.4/v1.3） |
 | v1.14      | 2026-10-13 | **（为什么）模块化边界判据更新**：用户明确"可替换系统层用模块，不可替换不用模块"。改了什么：① 文头关联子文档升版（包管理 v1.4→v1.5、AI v1.3→v1.4）；② 正文涉及模块化边界的表述同步"可替换 vs 不可替换 vs 软件级"（见包管理文档 v1.5 §1.1/§2.5）；③ 附 v1.14 审查修复记录 |
+| v1.15      | 2026-10-13 | **（为什么）转译桌面落地并通过可视化验收**：用户放弃 Xfce（黑屏/卡死/鼠标映射/滚轮四连问题），拍板自研"转译桌面"（借鉴 xfwm4/xfdesktop/xfce4-panel 绘制与交互思路，代码自研，不依赖 X11/GTK）。改了什么：① 组件 4.5 新增桌面.qd（desktop.c v1.0 转译桌面：fb 直绘窗口/图标/面板/终端/时钟，多指针设备 PS/2+USB tablet 同时打开，6800 AI 对话）；② 4.1 init.c 补鼠标链路修复（devtmpfs 挂载失败 EBUSY 回退 tmpfs，避免 tmpfs 覆盖 /dev/input 节点——黑屏复发的直接根因之一）；③ 4.2 boot.qds 定稿 v0.11（echo 与头注释一致）；④ 6.2 验证记录更新为转译桌面 VNC 真实交互验收（TightVNC viewer：开窗/键盘输入/help/date 透传/AI 对话 6800→云端小米 MiMo API/exit 关闭，逐项实测）；⑤ 状态总表自研桌面行改"✅ 已实现（VNC 交互验收）"、桌面.qd 改"✅ 已实现（转译桌面 desktop.c）"；⑥ 心跳低频化（每 60 秒一条，作存活证明）；⑦ 附 v1.15 审查修复记录 |
 
 
 
@@ -188,8 +189,8 @@ Linux 内核 (bzImage 6.1.115)
 
 | 模式 | 语义 | 常驻形态 | 内存预算 |
 | --- | --- | --- | --- |
-| `QD_MODE=full`（默认） | 现状全流程：ai 子系统 → 自研桌面（渲染器 fbdesktop + 用户态 uis）→ 主系统监督循环 | boot.qds + ai_service + uis/render（自研桌面） + module-engine | 骨架 ≤1G（见 7B） |
-| `QD_MODE=main` | 只主框架：跳过 AI 段（chroot+ai_service+探活）与图形会话段，保留设备/网络/主系统监督循环 | boot.qds + module-engine（+ 按需 fork 的模块进程） | **≤0.5G**（无自研桌面） |
+| `QD_MODE=full`（默认） | 现状全流程：ai 子系统 → 转译桌面（桌面.qd/bin/desktop + 渲染器 v2.1 fbscreen）→ 主系统监督循环 | boot.qds + ai_service + desktop/render（转译桌面） + module-engine | 骨架 ≤1G（见 7B） |
+| `QD_MODE=main` | 只主框架：跳过 AI 段（chroot+ai_service+探活）与图形会话段，保留设备/网络/主系统监督循环 | boot.qds + module-engine（+ 按需 fork 的模块进程） | **≤0.5G**（无转译桌面） |
 | `QD_MODE=ai` | 只子框架：跳过图形会话段与主系统监督循环，**新增 ai_service 重启循环（watchdog）** | boot.qds + ai_service×1（对话时 fork mycurl） | **≤0.5G**，几百 MB 设备可跑 |
 
 - **单框架独立启动成立的依据**：现有启动顺序本就无硬等待——6801 不通时 ai_service 的 AUTH/MEMO/MEM/TASK/SKILLS/CONFIG GET|SET 自动报"主系统 6801 不可达"，只剩 STATUS/HELLO/CHAT/SKILLS LIST/CONFIG 可用 = 纯聊天 Agent；6800 不通时 module-engine 的 `ai`/`MEMO`/`TASK` 等命令报"主系统无 AI 子系统"。**缺对端必须给明确报错文案，不得静默失败或挂死**（因果一致性）。
@@ -250,6 +251,8 @@ qemu-system-x86_64 -accel whpx -m 1024 -smp 2 \   # 骨架模式：预算 1G 为
 
 * 避坑：头文件用 `<sys/mount.h>`；/dev 必须挂 devtmpfs（tmpfs 会覆盖 mknod 节点）。
 
+* **鼠标链路修复（v1.15）**：devtmpfs 挂载失败且 errno≠EBUSY 才回退 tmpfs——此前 devtmpfs 挂载失败时无条件回退 tmpfs，tmpfs 覆盖 /dev/input 节点，导致桌面收不到任何指针设备事件（Xfce 黑屏/卡死/鼠标失灵的直接根因之一）；修复后若 devtmpfs 已挂载（EBUSY）则保留原挂载，/dev/input/event* 正常暴露给桌面。
+
 ### 4.2 boot.qds —— 引导文件（v0.3）
 
 
@@ -276,7 +279,7 @@ boot.qds 顶部先读 `QD_MODE`（默认 full），再按分支执行。各段**
 | 网络配置（主系统侧 resolv 等） | 必须 | 必须 | 必须（含容器内 resolv.conf 写入） |
 | chroot + ai_service 段（69-89，activate_ai_bg） | 必须 | **可跳过** | 必须 |
 | 探活 `/tmp/ai.log` 就绪 | 必须 | 可跳过（未启 ai_service） | 必须 |
-| 自研桌面段（94-120，start_uis：渲染器 fbdesktop + 用户态 uis） | 必须 | **可跳过** | **可跳过** |
+| 转译桌面段（94-120，start_desktop：桌面.qd/bin/desktop + 渲染器 v2.1） | 必须 | **可跳过** | **可跳过** |
 | 主系统监督循环（while + module-engine，123-137） | 必须 | 必须 | **可跳过** |
 | ai_service watchdog（while 重拉，v1.12 新增） | 可跳过（探活一次即可） | 可跳过 | **必须**（ai_service 此前无重启者） |
 
@@ -307,7 +310,7 @@ boot.qds 顶部先读 `QD_MODE`（默认 full），再按分支执行。各段**
 * 服务：TCP 127.0.0.1:6800，指令 STATUS / HELLO / CHAT <话> / CONFIG / HELP（v0.6 实测；状态如实报告当前引擎/模型/就绪状态）。
 
 * **三端口职责分离（v1.12 新增）**：
-  - `6800` = 文本协议入站口（人 / 主系统 `me> ai` / uis 对话），仅 loopback、裸文本行命令，零回归保留不动；
+  - `6800` = 文本协议入站口（人 / 主系统 `me> ai` / 转译桌面对话），仅 loopback、裸文本行命令，零回归保留不动；
   - `6801` = AI ↔ 主系统内部工具转发（ai_service 作客户端连 module-engine，转发 MEMO/MEM/TASK/SKILLS/CONFIG）；
   - `6802` = **对外 HTTP API**（OpenAI 兼容），可配置 `http_enabled` 开关、`http_port`（默认 `127.0.0.1:6802`）。
 
@@ -327,6 +330,19 @@ boot.qds 顶部先读 `QD_MODE`（默认 full），再按分支执行。各段**
   * 资源：骨架 ≤1G、本地 AI ≥3.5G、记忆挂主系统、内存可向主系统申请（永久 / 借用）；
 
   * 架构：子框架与主框架相连，子系统激活主系统、主系统崩溃由子系统侧重启。
+
+### 4.5 desktop.c —— 转译桌面（桌面.qd v1.0，v1.15 新增）
+
+* 源码：`模块/桌面.qd/bin/desktop.c`，静态编译 54792B（musl 已 strip）。
+* 位置：`/modules/桌面.qd/`（.qds 契约：type=guide / name=桌面 / version=1.0 / entry=bin/desktop）。
+* 定位：**转译桌面**——用户拍板自研（借鉴 xfwm4 / xfdesktop / xfce4-panel 的绘制与交互思路，代码全部自研，不依赖 X11/GTK；Xfce 黑屏/卡死/鼠标映射/滚轮问题根源在模块包管理链路与渲染器-主系统桥接，整体弃用）。
+* 绘制：直接写 `/dev/fb0`（渲染器 v2.1 fbscreen 场景原语），CJK 自绘字形；1280x800 桌面：
+  * 顶部 6 图标（终端 / 系统结构 / 模块 / 仓库 / AI对话 / 帮助）+ 右上时钟（每 100ms 刷新，分钟级显示）；
+  * 底部面板 5 按钮（终端 / 结构 / 模块 / 仓库 / AI），点击等价于对应图标；
+  * 窗口：470x300 可层叠（标题栏 22px + 内容区 + 输入条），× 关闭判定 `x >= w->x+w->w-26 && y < w->y+WIN_BAR_H+2`，拖动=按住标题栏，滚轮=内容滚动；
+* 输入：多指针设备（MOUSE_MAX=4）——同时打开 PS/2（event2）与 USB tablet（event3），VNC/QEMU 绝对坐标经 tablet 注入（`-usb -device usb-tablet` 必需）；键盘经 QEMU VNC 注入，`exec_cmd` 透传 Linux shell（date/whoami/echo 等直接生效），内置命令 help/exit/桌面/结构/模块/仓库/ai 等；
+* AI 对话：`ai <话>` 经 TCP 6800 → ai.qd → 云端 API（默认小米 MiMo，`api.xiaomimimo.com`），超时 45s，回复显示在窗口内容区；
+* 心跳：每 60 秒一条 stdout（存活证明，VNC 活跃时 poll 不超时则不发）。
 
 
 
@@ -413,14 +429,21 @@ me>
 
 > 该片段为 v0.3 时代的链路验证存档（当时 /modules 为空，故"发现 0 个模块项"）。当前 full 模式已启用自研桌面，见 6.2。
 
-### 6.2 当前实测（自研桌面路线，boot.qds v0.10 + render v2.0 修复版）
+### 6.2 当前实测（转译桌面路线，boot.qds v0.11 + 渲染器 v2.1 + desktop v1.0）
 
-- **QEMU 验证**：`QD_MODE=full`，`-accel whpx -m 1024 -smp 2`，VNC 查看；serial_full.log 记录。
-- **渲染器修复**：render.c 三处修复（cmap 缓存指纹头校验、fb_char 越界兜底、fbbar 补 font_init 检查）后，交叉编译 SHA `20cf2b19f33e1821bce3ae3a64aa8711faa6e9939807d12eafb55b6f54a9083b`（62680B 已 strip），Windows 权威源 / WSL 权威源 / 镜像内三处一致；`/tmp/unifont.cmap` 已清（触发缓存重建）。
-- **自研桌面显示成功**（`uis_desktop.png`，1280x800）：标题栏"奇点OS 主系统（主框架）"、左侧真实目录树、系统模块列表（包管理/测试模块/渲染器/用户态）、内存 973/940MB、底部"奇点OS~$"输入条，**中文完整**；启动期间 segfault 计数 = 0。
-- **链路结论**：内核 → init → boot.qds v0.10 → ai.qd 子系统（chroot + AI 服务）→ 自研桌面（start_uis：渲染器 fbdesktop + 用户态 uis）全链通过；Xorg/Xfce 已从启动链路移除，不再参与。
+- **QEMU 验证**：`QD_MODE=full`，`-accel whpx -m 1024 -smp 2`，VNC 查看（`-display vnc=127.0.0.1:1` + `-usb -device usb-tablet`）；serial_full19.log 记录。
+- **启动链路**：boot.qds v0.11 full 分支全链通过——`[引导] 奇点OS 引导文件 boot.qds v0.11（转译桌面）启动` → ai.qd 子系统就绪（PID=97，6800 常驻）→ 转译桌面图形会话（`/dev/fb0` 可用，渲染器 fbscreen 场景绘制）→ 主系统监督循环。
+- **指针设备**：desktop 同时打开 PS/2（`/dev/input/event2`，is_ptr=1 has_btn=1）与 USB tablet（`/dev/input/event3`）双指针，VNC/QEMU 绝对坐标经 tablet 注入；`/dev/input/event0/1` 无指针键位跳过。
+- **可视化交互验收（TightVNC viewer 连 127.0.0.1:5901，逐项实测）**：
+  - 桌面完整渲染：顶部 6 图标（终端/系统结构/模块/仓库/AI对话/帮助）+ 右上时钟 + 底部 5 面板按钮（终端/结构/模块/仓库/AI）；
+  - 点击"终端"图标 → 窗口开窗成功（470x300 可层叠窗口，标题栏+内容区+输入条）；
+  - 键盘输入链路生效：`help` → 完整命令帮助列表；`date` → `Tue Oct 13 18:02:53 2026`（Linux shell 透传验证通过）；
+  - **AI 对话全链路**：`ai hello` → 经 6800 → ai.qd → 云端小米 MiMo API（https://api.xiaomimimo.com）返回中文回复，窗口正常显示（含子系统状态：memo/task/skills 已启用）；
+  - `exit` 命令关闭窗口成功，回到干净桌面。
+- **构建产物**：render 66776B / desktop 54792B / init 38352B（musl 静态已 strip），镜像 sos-rootfs.img 256MB（e2fsck 139 files / 12035 blocks，0.7% non-contiguous）。
+- **链路结论**：内核 → init → boot.qds v0.11 → ai.qd 子系统（chroot + AI 服务 6800/6802）→ 转译桌面（桌面.qd/bin/desktop + 渲染器 v2.1）→ 主系统监督循环，full 模式全链可视化可用；Xorg/Xfce 已彻底移除。
 
-> **时序说明**：日志中 `[引导] ... 已就绪 (PID=79)` 出现在 AI 服务打印"就绪"之前，属 stdout 缓冲 / 后台重定向造成的行序差异，不代表真实时序——实际是 boot.qds 轮询到"就绪"字样后才打印该行（见 3.4）。串口可见的 `奇点OS AI 服务 v0.1 就绪`（serial.log 原始行号）来自 ai_service 的 stderr（未重定向），与 /tmp/ai.log 内的 stdout"就绪"并存，机制见 3.4。
+> **时序说明**：日志中 `[引导] ... 已就绪` 与 AI 服务打印"就绪"的行序差异，属 stdout 缓冲 / 后台重定向造成，不代表真实时序——实际是 boot.qds 轮询到"就绪"字样后才打印该行（见 3.4）。串口可见的 `奇点OS AI 服务 v0.1 就绪`（serial.log 原始行号）来自 ai_service 的 stderr（未重定向），与 /tmp/ai.log 内的 stdout"就绪"并存，机制见 3.4。
 
 
 
@@ -432,9 +455,9 @@ me>
 
 | 项目                              | 状态              | 说明                            |
 | ------------------------------- | --------------- | ----------------------------- |
-| 引导链（内核→init→boot.qds→ai.qd→主框架） | ✅ 已实现（QEMU 验证）  | 6.2 实测：boot.qds v0.10 full 分支全链通过 |
-| 自研桌面（boot.qds v0.10 start_uis：渲染器 fbdesktop + 用户态 uis） | ✅ 已实现（QEMU 验证）  | 6.2 实测：uis_desktop.png 中文完整、segfault=0；**替代已废弃的 Xfce 路线** |
-| 桌面.qd 独立模块（模块化封装） | 📐 待建 | **实际不存在**：/modules 仅有 包管理.qd / 渲染器.qd / 用户态.qd（+ 镜像内测试/坏模块演示残留）；v1.11 声称的"桌面.qd 已实现、热替换已验证、6 模块项"**未落地**，已更正 |
+| 引导链（内核→init→boot.qds→ai.qd→主框架） | ✅ 已实现（QEMU 验证）  | 6.2 实测：boot.qds v0.11 full 分支全链通过 |
+| 自研桌面（转译桌面：桌面.qd/bin/desktop + 渲染器 v2.1 fbscreen） | ✅ 已实现（VNC 交互验收）  | 6.2 实测：TightVNC viewer 真实交互——开窗/键盘/help/date 透传/AI 对话 6800→云端/exit 关闭逐项通过；**替代已废弃的 Xfce 路线** |
+| 桌面.qd 独立模块（模块化封装） | ✅ 已实现（v1.0 转译桌面）  | `/modules/桌面.qd`（bin/desktop + .qds 契约 type=guide/name=桌面/version=1.0/entry=bin/desktop）；v1.11 声称的"Xfce 桌面.qd"未落地已更正，此为全新自研实现 |
 | ai.qd 隔离容器 + AI 服务（6800/6802） | ✅ 已实现（骨架+云端）  | v0.6：STATUS/HELLO/CHAT/CONFIG/HELP + 6802 HTTP OpenAI 兼容 + 工具开关 |
 | 主系统监督循环（崩溃自动重启） | ✅ 已实现（崩溃重启场景待补测） | boot.qds while 循环；serial.log 尚无"第 N 次重新激活"证据        |
 | ai.qdai 约束文件                    | ✅ 已实现（v0.4 八段式） | 含双域权限模型                       |
@@ -447,8 +470,8 @@ me>
 | 内存预算（≤1G / 4G 带 AI）             | ✅ / 📐 骨架已验 / 带 AI 待验  | 骨架 `-m 1024` 已实测（自研桌面 + AI 骨架跑通）；带 AI `-m 4096` 待验（阶段 7） |
 | 本地 LLM 接入                       | ⬜ 未开始           | 模型可取自旧 arch.img（MiniCPM-2B 等） |
 | 模块契约解析（.qds type / entry / sys_deps） | ✅ / ⬜ 部分实现     | **实际仅解析 name/entry/version/desc**；type 仅用于缺契约报错提示；**sys_deps 未解析**（两阶段安装无实例） |
-| 模块总线（热插拔 / 调用隔离 / 生命周期）         | ⬜ 未开始           | 热发现/热插拔机制已实现（module-engine mtime 检测 + 缺契约自检）；**调用隔离/统一生命周期/总线转译未落地**（uis 硬编码调用路径，见 4.3 与包管理文档 v1.5 §8） |
-| 网络 / 图形界面                       | ✅ / ⬜ 图形界面已实现 / 网络未开始 | 图形界面 = **自研桌面**（渲染器 + 用户态）；网络仓库待阶段 10 |
+| 模块总线（热插拔 / 调用隔离 / 生命周期）         | ⬜ 未开始           | 热发现/热插拔机制已实现（module-engine mtime 检测 + 缺契约自检）；**调用隔离/统一生命周期/总线转译未落地**（转译桌面硬编码调用路径，见 4.3 与包管理文档 v1.5 §8） |
+| 网络 / 图形界面                       | ✅ / ⬜ 图形界面已实现 / 网络未开始 | 图形界面 = **转译桌面**（桌面.qd/bin/desktop + 渲染器 v2.1）；网络仓库待阶段 10 |
 
 状态图例：✅ 已实现（有验证证据）｜📐 已设计（文档定稿）｜⬜ 未开始
 
@@ -627,11 +650,11 @@ QD_MODE 拆分后，单框架模式面向几百 MB 内存设备：
 
 | 模式 | 常驻进程 | 应用层预算 | 说明 |
 | --- | --- | --- | --- |
-| `QD_MODE=ai` | boot.qds(shell) + ai_service×1（对话时 fork mycurl） | **≤0.5G** | 无自研桌面、无 module-engine、无 uis；内存 ≈ ai_service 常驻 + 缓冲（8KB+16KB 每请求），远低于 0.5G 预算 |
-| `QD_MODE=main` | boot.qds(shell) + module-engine×1（+ 按需 fork 的模块进程） | **≤0.5G** | 无自研桌面；内存 ≈ module-engine 常驻 + 模块区 |
-| `QD_MODE=full` | 上述合计 + 自研桌面（uis + render） | 骨架 ≤1G（7B.1） | 现状口径不变，零回归 |
+| `QD_MODE=ai` | boot.qds(shell) + ai_service×1（对话时 fork mycurl） | **≤0.5G** | 无转译桌面、无 module-engine；内存 ≈ ai_service 常驻 + 缓冲（8KB+16KB 每请求），远低于 0.5G 预算 |
+| `QD_MODE=main` | boot.qds(shell) + module-engine×1（+ 按需 fork 的模块进程） | **≤0.5G** | 无转译桌面；内存 ≈ module-engine 常驻 + 模块区 |
+| `QD_MODE=full` | 上述合计 + 转译桌面（desktop + render） | 骨架 ≤1G（7B.1） | 现状口径不变，零回归 |
 
-- 单框架模式两者合起来的"无图形骨架"同样满足既有 ≤1G 目标，且因跳过自研桌面比现状更省；
+- 单框架模式两者合起来的"无图形骨架"同样满足既有 ≤1G 目标，且因跳过转译桌面比现状更省；
 - ai 模式常驻纯聊天 Agent（6801 降级、6802 对外 API 仍可用），是最接近 phi-agent 极简目标的形态；
 - 预算纪律：单框架模式默认不预加载本地模型（本地 AI 仍走 3.5G 门槛，按需开启）。
 
@@ -909,3 +932,13 @@ QD_MODE 拆分后，单框架模式面向几百 MB 内存设备：
 | 81 | 模块化边界判据与用户最新裁决不符（"可替换系统层用模块，不可替换不用模块"）——模块引擎本体此前被列为模块清单项，但引擎管理模块、自己不是被管的模块 | 判据统一到"可替换 vs 不可替换 vs 软件级"（定义见包管理文档 v1.5 §1.1/§2.5）：可替换系统层 = 包管理/渲染器/用户态/AI 服务/桌面环境（模块）；不可替换底座 = 内核/init/boot.qds/module-engine 本体（非模块）；软件级 = 底层包管理装 |
 | 82 | 文头关联子文档版本滞后（包管理 v1.4、AI v1.3 本轮升版） | 文头关联子文档更新为包管理 v1.5、AI v1.4 |
 | 83 | §7 状态总表"模块总线"行引用包管理文档 v1.4 | 引用改为包管理文档 v1.5 §8 |
+
+## 附：v1.15 审查修复记录
+
+| #  | 问题 | 修复 |
+| -- | --- | --- |
+| 91 | Xfce 黑屏/卡死/鼠标映射/滚轮四连问题（用户实测：切回豆包最小化两三分钟即复发、界面不刷新点不动、时间停留、光标消失且映射错位）——根源在模块包管理链路与渲染器-主系统桥接，Xfce 路线整体不可靠 | 用户拍板**自研转译桌面**（借鉴 Xfce 架构思路、代码自研、不依赖 X11/GTK）：新建桌面.qd（desktop.c v1.0 直接写 /dev/fb0，窗口/图标/面板/终端/时钟/6800 AI 对话），boot.qds v0.11 full 模式启动转译桌面；Xfce 不再参与启动链路 |
+| 92 | 鼠标事件收不到（VNC 点击无效果/光标不动）——devtmpfs 挂载失败无条件回退 tmpfs，tmpfs 覆盖 /dev/input 节点 | init.c 修复：devtmpfs 挂载失败且 errno≠EBUSY 才回退 tmpfs；保留 /dev/input/event*；desktop 多指针设备（PS/2 event2 + USB tablet event3 同时打开），QEMU `-usb -device usb-tablet` 绝对坐标注入 |
+| 93 | 终端/AI 图标点击后窗口内容"（内容不可用）"——desktop.c 图标分支只对 i==1/2/3/5 写内容文件，i==0（终端）/i==4（AI对话）预置文本缺失 | desktop.c 补 i==0/i==4 内容写入；重启后点击验证通过（窗口显示"奇点OS 终端（转译桌面）…"） |
+| 94 | 心跳每 5 秒一条过吵（调试用 %50），且 boot.qds echo 文案 v0.10 与头注释 v0.11 不一致 | 心跳改 %600（每 60 秒一条，作存活证明）；boot.qds echo 改 v0.11，与头部注释一致 |
+| 95 | 6.2 验证记录停留在 fbdesktop/uis 时代，未反映转译桌面 VNC 验收 | 6.2 更新为转译桌面真实交互验收（开窗/键盘/help/date 透传/AI 对话 6800→云端小米 MiMo API/exit 关闭，逐项实测）；状态总表自研桌面/桌面.qd 改 ✅ 已实现 |

@@ -1,5 +1,5 @@
 /*
- * pm.c — 奇点OS 包管理模块（包管理.qd/bin/pm）v1.0
+ * pm.c — 奇点OS 包管理模块（包管理.qd/bin/pm）v1.1
  *
  * 主系统的包管理 = 独立 .qd 模块。module-engine 通过
  *   run 包管理 / pm <子命令>
@@ -10,9 +10,15 @@
  *   pm list                      已安装模块
  *   pm info <模块>               模块详情（读 .qds 契约）
  *   pm install <模块> [--repo R] 从仓库实体安装到 /modules（校验 .qds type=guide）
- *   pm remove <模块>             卸载
+ *   pm remove <模块>             卸载（递归删除嵌套目录）
  *   pm repo list                 仓库实体列表
  *   pm repo add <仓库.qds>       登记仓库索引（复制到 /仓库/<名>.qds）
+ *
+ * v1.1 变更（第四次重构 A3 缺陷修复）：
+ *   - install 解析 --repo <仓库>：校验 /仓库/<仓库>.qds 索引存在后再从
+ *     /仓库/实体 安装；索引缺失报明确错误（此前 --repo 被静默忽略）。
+ *   - remove 改为纯 C 递归删除 rm_rf：嵌套子目录（含 bin/、说明等）整体移除
+ *     （此前只对顶层子项 remove()，嵌套目录删不掉导致卸载残留）。
  *
  * 安装原则（文档 7A.1）：安装 = 受控地往 /modules 放 .qd，热发现由引擎扫描承担。
  */
@@ -31,13 +37,13 @@
 
 static void usage(void)
 {
-    printf("奇点OS 包管理模块 (pm) v1.0\n");
+    printf("奇点OS 包管理模块 (pm) v1.1\n");
     printf("用法: pm <子命令>\n");
     printf("  help                    本帮助\n");
     printf("  list                    已安装模块\n");
     printf("  info <模块>             模块详情（读 .qds 契约）\n");
-    printf("  install <模块> [--repo <仓库>]   从仓库实体安装\n");
-    printf("  remove <模块>           卸载\n");
+    printf("  install <模块> [--repo <仓库>]   从仓库实体安装（校验 /仓库/<仓库>.qds 索引）\n");
+    printf("  remove <模块>           卸载（递归删除嵌套目录）\n");
     printf("  repo list               仓库实体列表\n");
     printf("  repo add <仓库.qds>     登记仓库索引\n");
 }
@@ -73,6 +79,29 @@ static int copy_rec(const char *src, const char *dst)
     fclose(in);
     fclose(out);
     return 0;
+}
+
+/* 纯 C 递归删除（v1.1）：嵌套目录整体移除，等价 rm -rf，不依赖外部命令。
+ * 用 lstat 不跟随符号链接，避免误删链接目标。 */
+static int rm_rf(const char *path)
+{
+    struct stat st;
+    if (lstat(path, &st) != 0) return -1;
+    if (S_ISDIR(st.st_mode)) {
+        DIR *d = opendir(path);
+        if (d) {
+            struct dirent *e;
+            char c[BUF];
+            while ((e = readdir(d)) != NULL) {
+                if (strcmp(e->d_name, ".") == 0 || strcmp(e->d_name, "..") == 0) continue;
+                snprintf(c, sizeof(c), "%s/%s", path, e->d_name);
+                rm_rf(c);
+            }
+            closedir(d);
+        }
+        return rmdir(path);
+    }
+    return unlink(path);
 }
 
 /* 校验模块包：目录内必须有 .qds 且首行 type=guide（文档 2.2 契约） */
@@ -146,8 +175,20 @@ static int cmd_info(const char *name)
     return 0;
 }
 
-static int cmd_install(const char *name)
+/* v1.1：repo 可选。给出 --repo <仓库> 时先校验 /仓库/<仓库>.qds 索引存在，
+ * 再从 /仓库/实体 安装实体；索引缺失报明确错误（不再静默忽略 --repo）。 */
+static int cmd_install(const char *name, const char *repo)
 {
+    if (repo && repo[0]) {
+        char idx[BUF];
+        snprintf(idx, sizeof(idx), "%s/%s.qds", REPO_IDX, repo);
+        struct stat ist;
+        if (stat(idx, &ist) != 0) {
+            printf("✗ 仓库索引不存在: %s\n", idx);
+            printf("  请先 `pm repo add <索引.qds>` 登记该仓库，或去掉 --repo 从默认 /仓库/实体 安装。\n");
+            return 1;
+        }
+    }
     char src[BUF], dst[BUF];
     if (strstr(name, ".qd"))
         snprintf(src, sizeof(src), "%s/%s", REPO_DIR, name);
@@ -162,8 +203,13 @@ static int cmd_install(const char *name)
         printf("✗ 模块缺少合法 .qds 契约（需首行 type=guide）: %s\n", name);
         return 1;
     }
-    printf("校验通过: %s v%s（入口 %s）\n", mname[0] ? mname : name,
-           ver[0] ? ver : "?", entry[0] ? entry : "无");
+    {
+        const char *disp = mname[0] ? mname : name;
+        printf("校验通过: %s v%s（入口 %s）%s%s\n", disp,
+               ver[0] ? ver : "?", entry[0] ? entry : "无",
+               (repo && repo[0]) ? "｜仓库索引 " : "",
+               (repo && repo[0]) ? repo : "");
+    }
     mkdir(MODULES_DIR, 0755);
     if (strstr(name, ".qd"))
         snprintf(dst, sizeof(dst), "%s/%s", MODULES_DIR, name);
@@ -174,6 +220,7 @@ static int cmd_install(const char *name)
     return 0;
 }
 
+/* v1.1：递归删除嵌套目录，整体移除，不留残留。 */
 static int cmd_remove(const char *name)
 {
     char path[BUF];
@@ -182,23 +229,9 @@ static int cmd_remove(const char *name)
     else
         snprintf(path, sizeof(path), "%s/%s.qd", MODULES_DIR, name);
     struct stat st;
-    if (stat(path, &st) != 0) { printf("未安装: %s\n", name); return 1; }
-    if (S_ISDIR(st.st_mode)) {
-        /* 递归删除 */
-        DIR *d = opendir(path);
-        if (d) {
-            struct dirent *e;
-            while ((e = readdir(d)) != NULL) {
-                if (strcmp(e->d_name, ".") == 0 || strcmp(e->d_name, "..") == 0) continue;
-                char c[BUF];
-                snprintf(c, sizeof(c), "%s/%s", path, e->d_name);
-                remove(c);
-            }
-            closedir(d);
-        }
-    }
-    if (remove(path) != 0) { printf("✗ 移除失败: %s\n", path); return 1; }
-    printf("✓ 已卸载 %s\n", name);
+    if (lstat(path, &st) != 0) { printf("未安装: %s\n", name); return 1; }
+    if (rm_rf(path) != 0) { printf("✗ 移除失败: %s\n", path); return 1; }
+    printf("✓ 已卸载 %s（递归删除完成）\n", name);
     return 0;
 }
 
@@ -241,7 +274,17 @@ int main(int argc, char **argv)
     if (strcmp(c, "help") == 0) usage();
     else if (strcmp(c, "list") == 0) return cmd_list();
     else if (strcmp(c, "info") == 0 && argc >= 3) return cmd_info(argv[2]);
-    else if (strcmp(c, "install") == 0 && argc >= 3) return cmd_install(argv[2]);
+    else if (strcmp(c, "install") == 0 && argc >= 3) {
+        /* v1.1：解析可选 --repo <仓库>（module-engine me> pm 已逐字透传全部参数） */
+        const char *repo = NULL;
+        for (int i = 3; i < argc; i++) {
+            if (strcmp(argv[i], "--repo") == 0) {
+                if (i + 1 < argc) { repo = argv[++i]; }
+                else { printf("✗ --repo 需要一个仓库名参数\n"); return 1; }
+            }
+        }
+        return cmd_install(argv[2], repo);
+    }
     else if (strcmp(c, "remove") == 0 && argc >= 3) return cmd_remove(argv[2]);
     else if (strcmp(c, "repo") == 0 && argc >= 3 && strcmp(argv[2], "list") == 0) return cmd_repo_list();
     else if (strcmp(c, "repo") == 0 && argc >= 4 && strcmp(argv[2], "add") == 0) return cmd_repo_add(argv[3]);

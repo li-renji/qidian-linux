@@ -1,5 +1,5 @@
 /*
- * render.c — 奇点OS 渲染器模块（渲染器.qd/bin/render）v2.0
+ * render.c — 奇点OS 渲染器模块（渲染器.qd/bin/render）v2.1
  *
  * 主系统的渲染器 = 独立 .qd 模块（可替换）：
  *   - v1.0：文本渲染器（banner/card/list/status）
@@ -7,12 +7,23 @@
  *   - v2.0：+ fb 图形后端（自绘 /dev/fb0，点阵字形直接写像素）
  *           完整中文显示（绕过 fbcon 256/512 字形限制）
  *           命令：fbclear / fbdesktop / fbfile <文件> [标题] / fbbar <文本> / fbloc <x> <y> <文本>
+ *   - v2.1：+ 桌面合成原语（转译 Xfce 架构给 桌面.qd 使用）：
+ *           fbbg <色>           全屏背景
+ *           fbrect <x> <y> <w> <h> <色>      填充矩形（像素坐标）
+ *           fbtext <x> <y> <fg> <bg> <文本>  指定像素位置文本
+ *           fbicon <x> <y> <聚焦> <标签>     桌面图标（边框/底色/方块/标签）
+ *           fbwin <x> <y> <w> <h> <聚焦> <标题> <内容文件> [行偏移]   窗口
+ *           fbpanel <y> <项...> 底部快捷栏
+ *           fbscreen <场景文件>  一次绘制完整场景（每行一条原语，供桌面合成器调用）
  *   - 未来换 GPU 合成器时，只替换本模块即可（模块间只有调用关系）
  *
  * 命令接口（模块契约）：
  *   render help / banner <t> / card <t> [行...] / list <t> [项...]
  *   render status <k=v> [...] / tree [路径] [深度] / desktop
  *   render fbclear / fbdesktop / fbfile <文件> [标题] / fbbar <文本> / fbloc <x> <y> <文本>
+ *   render fbbg <色> / fbrect <x> <y> <w> <h> <色> / fbtext <x> <y> <fg> <bg> <文本>
+ *   render fbicon <x> <y> <聚焦> <标签> / fbwin <x> <y> <w> <h> <聚焦> <标题> <文件> [偏移]
+ *   render fbpanel <y> <项...> / fbscreen <场景文件>
  */
 #include <stdio.h>
 #include <string.h>
@@ -31,6 +42,8 @@
 #define GLYPH_W 16
 #define GLYPH_BYTES 32          /* 16x16 1bpp */
 #define MAX_CMAP 0xA000         /* 码点范围 0x20-0x9FFF */
+#define FONT_PATH "/usr/share/consolefonts/unifont-16.psf"
+#define CMAP_CACHE "/tmp/unifont.cmap"
 
 /* ---------------- 文本后端（v1.1 保留，串口/无 fb 环境可用） ---------------- */
 static void rule(char c)
@@ -50,15 +63,14 @@ static void center(const char *s)
 
 static void usage(void)
 {
-    printf("奇点OS 渲染器模块 (render) v2.0\n");
+    printf("奇点OS 渲染器模块 (render) v2.1\n");
     printf("用法: render <模式> [内容]\n");
-    printf("  banner <标题> / card / list / status   文本组件\n");
+    printf("  文本组件: banner <标题> / card / list / status\n");
     printf("  tree [路径] [深度] / desktop           真实结构（文本）\n");
-    printf("  fbclear                                清屏（fb 图形后端）\n");
-    printf("  fbdesktop                              主系统桌面（fb 自绘，中文完整显示）\n");
-    printf("  fbfile <文件> [标题]                   绘制文本文件内容\n");
-    printf("  fbbar <文本>                           底部状态/输入条\n");
-    printf("  fbloc <x> <y> <文本>                   指定位置绘制一行\n");
+    printf("  fb 基础: fbclear / fbdesktop / fbfile <文件> [标题] / fbbar <文本> / fbloc <x> <y> <文本>\n");
+    printf("  桌面合成: fbbg <色> / fbrect <x> <y> <w> <h> <色> / fbtext <x> <y> <fg> <bg> <文本>\n");
+    printf("            fbicon <x> <y> <聚焦> <标签> / fbwin <x> <y> <w> <h> <聚焦> <标题> <文件> [偏移]\n");
+    printf("            fbpanel <y> <项...> / fbscreen <场景文件>\n");
     printf("渲染后端: 文本(VNC/串口) + fb自绘(需要 /dev/fb0)\n");
 }
 
@@ -92,19 +104,27 @@ static int fb_init(void)
     return 0;
 }
 
-/* 加载 PSF2 字体（/usr/share/consolefonts/unifont-16.psf），mmap 直映 + cmap 磁盘缓存 */
+/* 加载 PSF2 字体（unifont-16.psf），mmap 直映 + cmap 磁盘缓存（含指纹校验） */
 static int font_init(void)
 {
-    /* cmap 缓存：/tmp/unifont.cmap（80KB，字体固定则内容固定） */
+    /* 先取当前字体文件大小作为缓存指纹（字体更换 → 指纹变化 → 缓存失效重建） */
+    struct stat cur_fst;
+    if (stat(FONT_PATH, &cur_fst) != 0 || cur_fst.st_size < 32) return -1;
+
     cmap = (unsigned short *)malloc(MAX_CMAP * sizeof(unsigned short));
     if (!cmap) return -1;
-    int fd = open("/tmp/unifont.cmap", O_RDONLY);
+    int fd = open(CMAP_CACHE, O_RDONLY);
     if (fd >= 0) {
+        /* 缓存格式：uint32 字体文件大小 | uint32 glyph 数 | 80KB cmap */
+        uint32_t cached_size = 0, cached_cnt = 0;
+        ssize_t rh = read(fd, &cached_size, 4);
+        ssize_t rn = read(fd, &cached_cnt, 4);
         ssize_t rd = read(fd, cmap, MAX_CMAP * sizeof(unsigned short));
         close(fd);
-        if (rd == (ssize_t)(MAX_CMAP * sizeof(unsigned short))) {
-            /* glyph 段 mmap 字体文件 */
-            int ffd = open("/usr/share/consolefonts/unifont-16.psf", O_RDONLY);
+        if (rh == 4 && rn == 4 && rd == (ssize_t)(MAX_CMAP * sizeof(unsigned short))
+            && cached_size == (uint32_t)cur_fst.st_size) {
+            /* 指纹匹配：glyph 段 mmap 字体文件 */
+            int ffd = open(FONT_PATH, O_RDONLY);
             if (ffd < 0) { free(cmap); cmap = NULL; return -1; }
             struct stat fst;
             if (fstat(ffd, &fst) != 0 || fst.st_size < 32) { close(ffd); free(cmap); cmap = NULL; return -1; }
@@ -120,9 +140,10 @@ static int font_init(void)
             glyphs += hdrsize;
             return 0;
         }
+        /* 指纹不匹配：继续走完整解析（重建缓存） */
     }
-    /* 无缓存：完整解析 */
-    FILE *f = fopen("/usr/share/consolefonts/unifont-16.psf", "rb");
+    /* 无缓存或指纹不匹配：完整解析 */
+    FILE *f = fopen(FONT_PATH, "rb");
     if (!f) { free(cmap); cmap = NULL; return -1; }
     uint8_t hdr[32];
     if (fread(hdr, 1, 32, f) != 32) { fclose(f); free(cmap); cmap = NULL; return -1; }
@@ -165,9 +186,13 @@ static int font_init(void)
         }
     }
     fclose(f);
-    /* 写 cmap 缓存 */
-    int wfd = open("/tmp/unifont.cmap", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    /* 写 cmap 缓存（指纹头：字体文件大小 + glyph 数，供下次校验） */
+    int wfd = open(CMAP_CACHE, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (wfd >= 0) {
+        uint32_t fsz = (uint32_t)cur_fst.st_size;
+        uint32_t gcnt = (uint32_t)glyph_count;
+        write(wfd, &fsz, 4);
+        write(wfd, &gcnt, 4);
         write(wfd, cmap, MAX_CMAP * sizeof(unsigned short));
         close(wfd);
     }
@@ -183,6 +208,13 @@ static void fb_char(int x, int y, unsigned cp, uint32_t fg, uint32_t bg)
         if (cp >= MAX_CMAP || cmap[cp] == 0xFFFF) return;
     }
     unsigned gi = cmap[cp];
+    if (gi >= (unsigned)glyph_count) {
+        /* 索引越界（缓存/字体不匹配兜底）：画方块 */
+        cp = 0xFFFD;
+        if (cp >= MAX_CMAP || cmap[cp] == 0xFFFF) return;
+        gi = cmap[cp];
+        if (gi >= (unsigned)glyph_count) return;
+    }
     const uint8_t *g = glyphs + (size_t)gi * GLYPH_BYTES;
     for (int row = 0; row < GLYPH_H; row++) {
         int yy = y + row;
@@ -274,6 +306,223 @@ static void fb_bar(const char *s)
     fb_rect(0, bar_top, fb_xres, GLYPH_H + 4, 0x00A8A8A8);
     int hc = (GLYPH_H + 4 - GLYPH_H) / 2;
     fb_text(8, bar_top + hc, s, 0x00000000, 0x00A8A8A8);
+}
+
+/* ---------------- v2.1 桌面合成原语 ---------------- */
+
+/* 解析颜色: RRGGBB / 0xRRGGBB / 0xAARRGGBB → uint32 */
+static uint32_t parse_color(const char *s)
+{
+    unsigned long v = strtoul(s, NULL, 16);
+    return (uint32_t)v;
+}
+
+/* fbbg <色>：全屏背景 */
+static void do_fbbg(const char *col)
+{
+    if (fb_init() != 0) { printf("fb 后端不可用\n"); return; }
+    bg_pix = parse_color(col);
+    fb_clear();
+}
+
+/* fbrect <x> <y> <w> <h> <色>：填充矩形（像素坐标） */
+static void do_fbrect(int x, int y, int w, int h, const char *col)
+{
+    if (fb_init() != 0) { printf("fb 后端不可用\n"); return; }
+    fb_rect(x, y, w, h, parse_color(col));
+}
+
+/* fbtext <x> <y> <fg> <bg> <文本...>：指定像素位置文本 */
+static void do_fbtext(int x, int y, const char *fg, const char *bg, const char *s)
+{
+    if (fb_init() != 0 || font_init() != 0) { printf("fb 后端不可用\n"); return; }
+    fb_text(x, y, s, parse_color(fg), parse_color(bg));
+}
+
+/* fbicon <x> <y> <聚焦> <标签...>：桌面图标（转译 xfdesktop 图标） */
+static void do_fbicon(int x, int y, int focused, const char *label)
+{
+    if (fb_init() != 0 || font_init() != 0) { printf("fb 后端不可用\n"); return; }
+    const int ICON_W = 72, ICON_H = 62;
+    uint32_t border = focused ? 0x005A9BD5 : 0x004A4A4A;
+    uint32_t fill   = focused ? 0x001E3A55 : 0x00141414;
+    uint32_t square = focused ? 0x006FA8DC : 0x00555555;
+    fb_rect(x, y, ICON_W, ICON_H, fill);
+    fb_rect(x, y, ICON_W, 2, border);                       /* 上 */
+    fb_rect(x, y + ICON_H - 2, ICON_W, 2, border);          /* 下 */
+    fb_rect(x, y, 2, ICON_H, border);                       /* 左 */
+    fb_rect(x + ICON_W - 2, y, 2, ICON_H, border);          /* 右 */
+    /* 图标方块（28x28，居中偏上） */
+    int sx = x + (ICON_W - 28) / 2;
+    fb_rect(sx, y + 4, 28, 28, square);
+    /* 标签：白字，居中，y+40 起 */
+    int lw = fb_str_w(label);
+    int tx = x + (ICON_W - lw) / 2;
+    if (tx < x + 2) tx = x + 2;
+    fb_text(tx, y + 40, label, 0x00FFFFFF, fill);
+}
+
+/* fbwin <x> <y> <w> <h> <聚焦> <标题> <内容文件> [行偏移]：窗口（转译 xfwm4 窗口） */
+static void do_fbwin(int x, int y, int w, int h, int focused, const char *title,
+                     const char *file, int offset)
+{
+    if (fb_init() != 0 || font_init() != 0) { printf("fb 后端不可用\n"); return; }
+    if (w < 60 || h < 40) return;
+    uint32_t border = focused ? 0x005A9BD5 : 0x004A4A4A;
+    uint32_t fill   = 0x00242424;
+    uint32_t bar    = focused ? 0x002E5B8A : 0x003A3A3A;
+    uint32_t barfg  = focused ? 0x00FFFFFF : 0x00AAAAAA;
+    /* 背景 + 边框 */
+    fb_rect(x, y, w, h, fill);
+    fb_rect(x, y, w, 2, border);
+    fb_rect(x, y + h - 2, w, 2, border);
+    fb_rect(x, y, 2, h, border);
+    fb_rect(x + w - 2, y, 2, h, border);
+    /* 标题栏（22px） */
+    const int BAR_H = 22;
+    fb_rect(x + 2, y + 2, w - 4, BAR_H, bar);
+    int tw = fb_str_w(title);
+    if (tw > w - 40) tw = w - 40;
+    fb_text(x + 6, y + 2 + (BAR_H - GLYPH_H) / 2, title, barfg, bar);
+    /* 关闭按钮 ×（标题栏右端 20px 宽） */
+    fb_text(x + w - 20, y + 2 + (BAR_H - GLYPH_H) / 2, "×", 0x00E06060, bar);
+    /* 内容区：从标题栏下 4px 起，逐行画 contentfile（最多 (h-26-BAR_H-6)/16 行） */
+    int content_top = y + 2 + BAR_H + 4;
+    int maxlines = (h - (content_top - y) - 6) / GLYPH_H;
+    if (maxlines < 1) maxlines = 1;
+    FILE *f = fopen(file, "r");
+    if (!f) {
+        fb_text(x + 6, content_top, "(内容不可用)", 0x00FF8080, fill);
+        return;
+    }
+    char line[512];
+    int ln = 0, drawn = 0;
+    while (fgets(line, sizeof(line), f)) {
+        if (ln < offset) { ln++; continue; }
+        if (drawn >= maxlines) break;
+        line[strcspn(line, "\r\n")] = 0;
+        /* 截断超宽行 */
+        if (fb_str_w(line) > w - 14) {
+            char cut[256];
+            int keep = 0;
+            while (keep < (int)sizeof(cut) - 1) {
+                unsigned char c = (unsigned char)line[keep];
+                if (c < 0x80) {
+                    if (fb_str_w(cut) + GLYPH_W > w - 14) break;
+                    cut[keep] = line[keep]; keep++;
+                } else {
+                    if (fb_str_w(cut) + 2 * GLYPH_W > w - 14) break;
+                    cut[keep] = line[keep];
+                    if (keep + 1 < (int)sizeof(cut)) { cut[keep + 1] = line[keep + 1]; keep += 2; }
+                    else break;
+                }
+            }
+            cut[keep] = 0;
+            fb_text(x + 6, content_top + drawn * GLYPH_H, cut, 0x00DDDDDD, fill);
+        } else {
+            fb_text(x + 6, content_top + drawn * GLYPH_H, line, 0x00DDDDDD, fill);
+        }
+        drawn++;
+    }
+    fclose(f);
+    /* 输入行底色（底部）——桌面合成器在其上叠 fbtext 输入内容 */
+    int iny = y + h - GLYPH_H - 4;
+    fb_rect(x + 4, iny - 2, w - 8, GLYPH_H + 4, 0x00181818);
+}
+
+/* fbpanel <y> <项...>：底部快捷栏（转译 xfce4-panel） */
+static void do_fbpanel(int y, int argc, char **argv)
+{
+    if (fb_init() != 0 || font_init() != 0) { printf("fb 后端不可用\n"); return; }
+    const int PANEL_H = 28, BTN_W = 96;
+    fb_rect(0, y, fb_xres, PANEL_H, 0x002A2A2A);
+    fb_rect(0, y, fb_xres, 1, 0x00444444);
+    for (int i = 0; i < argc; i++) {
+        int bx = 6 + i * (BTN_W + 2);
+        fb_rect(bx, y + 3, BTN_W, PANEL_H - 6, 0x00363636);
+        const char *s = argv[i];
+        int sw = fb_str_w(s);
+        if (sw > BTN_W - 8) sw = BTN_W - 8;
+        fb_text(bx + (BTN_W - sw) / 2, y + (PANEL_H - GLYPH_H) / 2, s, 0x00E8E8E8, 0x00363636);
+        if (i < argc - 1)
+            fb_rect(bx + BTN_W, y + 6, 1, PANEL_H - 12, 0x00444444);
+    }
+}
+
+/* fbscreen <场景文件>：一次绘制完整场景。每行一条原语：
+ *   bg <色>
+ *   rect <x> <y> <w> <h> <色>
+ *   text <x> <y> <fg> <bg> <文本...>
+ *   icon <x> <y> <聚焦> <标签...>
+ *   win <x> <y> <w> <h> <聚焦> <标题> <文件> [行偏移]
+ *   panel <y> <项...>
+ * 行内空白字符分隔；文本类原语取"命令名之后全部剩余"作为文本。
+ */
+static void do_fbscreen(const char *path)
+{
+    if (fb_init() != 0 || font_init() != 0) { printf("fb 后端不可用\n"); return; }
+    FILE *f = fopen(path, "r");
+    if (!f) { printf("场景文件不存在: %s\n", path); return; }
+    char line[1024];
+    while (fgets(line, sizeof(line), f)) {
+        line[strcspn(line, "\r\n")] = 0;
+        if (line[0] == 0 || line[0] == '#') continue;
+        char *save = NULL;
+        char *cmd = strtok_r(line, " \t", &save);
+        if (!cmd) continue;
+        if (strcmp(cmd, "bg") == 0) {
+            char *c = strtok_r(NULL, " \t", &save);
+            if (c) { bg_pix = parse_color(c); fb_clear(); }
+        } else if (strcmp(cmd, "rect") == 0) {
+            char *xs = strtok_r(NULL, " \t", &save);
+            char *ys = strtok_r(NULL, " \t", &save);
+            char *ws = strtok_r(NULL, " \t", &save);
+            char *hs = strtok_r(NULL, " \t", &save);
+            char *cs = strtok_r(NULL, " \t", &save);
+            if (xs && ys && ws && hs && cs)
+                fb_rect(atoi(xs), atoi(ys), atoi(ws), atoi(hs), parse_color(cs));
+        } else if (strcmp(cmd, "text") == 0) {
+            char *xs = strtok_r(NULL, " \t", &save);
+            char *ys = strtok_r(NULL, " \t", &save);
+            char *fs = strtok_r(NULL, " \t", &save);
+            char *bs = strtok_r(NULL, " \t", &save);
+            char *rest = strtok_r(NULL, "", &save);
+            if (xs && ys && fs && bs && rest) {
+                while (*rest == ' ' || *rest == '\t') rest++;
+                fb_text(atoi(xs), atoi(ys), rest, parse_color(fs), parse_color(bs));
+            }
+        } else if (strcmp(cmd, "icon") == 0) {
+            char *xs = strtok_r(NULL, " \t", &save);
+            char *ys = strtok_r(NULL, " \t", &save);
+            char *fs = strtok_r(NULL, " \t", &save);
+            char *rest = strtok_r(NULL, "", &save);
+            if (xs && ys && fs && rest) {
+                while (*rest == ' ' || *rest == '\t') rest++;
+                do_fbicon(atoi(xs), atoi(ys), atoi(fs) ? 1 : 0, rest);
+            }
+        } else if (strcmp(cmd, "win") == 0) {
+            char *xs = strtok_r(NULL, " \t", &save);
+            char *ys = strtok_r(NULL, " \t", &save);
+            char *ws = strtok_r(NULL, " \t", &save);
+            char *hs = strtok_r(NULL, " \t", &save);
+            char *fs = strtok_r(NULL, " \t", &save);
+            char *ts = strtok_r(NULL, " \t", &save);
+            char *fl = strtok_r(NULL, " \t", &save);
+            char *os = strtok_r(NULL, " \t", &save);
+            if (xs && ys && ws && hs && fs && ts && fl)
+                do_fbwin(atoi(xs), atoi(ys), atoi(ws), atoi(hs), atoi(fs) ? 1 : 0,
+                         ts, fl, os ? atoi(os) : 0);
+        } else if (strcmp(cmd, "panel") == 0) {
+            char *ys = strtok_r(NULL, " \t", &save);
+            if (!ys) continue;
+            char *items[16]; int n = 0;
+            char *it;
+            while ((it = strtok_r(NULL, " \t", &save)) != NULL && n < 16)
+                items[n++] = it;
+            do_fbpanel(atoi(ys), n, items);
+        }
+    }
+    fclose(f);
 }
 
 /* ---------------- 结构树（真实扫描） ---------------- */
@@ -390,7 +639,7 @@ static void do_fb_desktop(void)
         return;
     }
     fb_clear();
-    fb_title_bar("奇点OS 主系统（主框架）", "render v2.0 fb 自绘");
+    fb_title_bar("奇点OS 主系统（主框架）", "render v2.1 fb 自绘");
     /* 内容区写临时文件后整页绘制 */
     char tmp[] = "/tmp/render_desk.XXXXXX";
     int fd = mkstemp(tmp);
@@ -423,8 +672,8 @@ static void do_fb_file(const char *path, const char *title)
         return;
     }
     fb_clear();
-    if (title) fb_title_bar(title, "render v2.0");
-    else fb_title_bar("奇点OS 主系统", "render v2.0");
+    if (title) fb_title_bar(title, "render v2.1");
+    else fb_title_bar("奇点OS 主系统", "render v2.1");
     FILE *f = fopen(path, "r");
     if (!f) {
         fb_text(8, 24, "(文件不存在)", 0xFFFFFFFF, 0x00000000);
@@ -468,12 +717,40 @@ int main(int argc, char **argv)
         return 0;
     }
     if (strcmp(m, "fbbar") == 0 && argc >= 3) {
-        if (fb_init() != 0) { printf("fb 后端不可用\n"); return 1; }
+        if (fb_init() != 0 || font_init() != 0) { printf("fb 后端不可用\n"); return 1; }
         fb_bar(argv[2]);
         return 0;
     }
     if (strcmp(m, "fbloc") == 0 && argc >= 5) {
         do_fb_loc(atoi(argv[2]), atoi(argv[3]), argv[4]);
+        return 0;
+    }
+
+    /* ---- v2.1 桌面合成原语 ---- */
+    if (strcmp(m, "fbbg") == 0 && argc >= 3) { do_fbbg(argv[2]); return 0; }
+    if (strcmp(m, "fbrect") == 0 && argc >= 7) {
+        do_fbrect(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atoi(argv[5]), argv[6]);
+        return 0;
+    }
+    if (strcmp(m, "fbtext") == 0 && argc >= 6) {
+        do_fbtext(atoi(argv[2]), atoi(argv[3]), argv[4], argv[5], argv[6]);
+        return 0;
+    }
+    if (strcmp(m, "fbicon") == 0 && argc >= 5) {
+        do_fbicon(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]) ? 1 : 0, argv[5]);
+        return 0;
+    }
+    if (strcmp(m, "fbwin") == 0 && argc >= 9) {
+        do_fbwin(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atoi(argv[5]),
+                 atoi(argv[6]) ? 1 : 0, argv[7], argv[8], argc >= 10 ? atoi(argv[9]) : 0);
+        return 0;
+    }
+    if (strcmp(m, "fbpanel") == 0 && argc >= 4) {
+        do_fbpanel(atoi(argv[2]), argc - 3, &argv[3]);
+        return 0;
+    }
+    if (strcmp(m, "fbscreen") == 0 && argc >= 3) {
+        do_fbscreen(argv[2]);
         return 0;
     }
 
@@ -532,7 +809,7 @@ int main(int argc, char **argv)
         printf("\033[2J\033[H");
         rule('=');
         center("奇点OS 主系统（主框架）");
-        center("renderer v2.0 · 真实显示系统结构");
+        center("renderer v2.1 · 真实显示系统结构");
         rule('=');
         printf("\n");
         build_desktop(stdout);
