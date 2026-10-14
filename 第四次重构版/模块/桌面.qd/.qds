@@ -1,5 +1,0 @@
-type=guide
-name=桌面
-version=1.0
-desc=主系统桌面模块（可替换系统层）：转译桌面（窗口/图标/快捷栏，evdev鼠标+tty0键盘，调渲染器fbscreen绘制）
-entry=bin/desktop
